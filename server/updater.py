@@ -89,8 +89,8 @@ def main():
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")])
     
     print("Restarting server...")
-    run_bat = os.path.join(repo_root, "start.bat")
-    subprocess.Popen(["cmd.exe", "/c", run_bat], cwd=repo_root, creationflags=0x08000000)
+    run_vbs = os.path.join(repo_root, "start.vbs")
+    subprocess.Popen(["wscript.exe", run_vbs], cwd=repo_root, creationflags=0x08000000)
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
