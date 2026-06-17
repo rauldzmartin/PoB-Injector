@@ -69,11 +69,22 @@ def is_channel(channel):
 
 def trigger_update(icon, item):
     import urllib.request
+    import json
     try:
-        req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}", method="POST")
-        urllib.request.urlopen(req)
+        # Check if update is available first
+        req_check = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={current_channel}")
+        with urllib.request.urlopen(req_check) as response:
+            data = json.loads(response.read().decode())
+            
+        if data.get("update_available"):
+            latest = data.get("latest_version", "")
+            icon.notify(f"Descargando versión {latest}...", "PoB Injector")
+            req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}", method="POST")
+            urllib.request.urlopen(req)
+        else:
+            icon.notify("Ya tienes la última versión instalada.", "PoB Injector")
     except Exception as e:
-        print(f"Update failed: {e}")
+        icon.notify(f"Error al buscar actualizaciones: {e}", "PoB Injector")
 
 def quit_app(icon, item):
     icon.stop()
