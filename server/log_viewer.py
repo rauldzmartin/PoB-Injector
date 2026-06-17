@@ -17,7 +17,7 @@ def tail_file(filename, text_widget):
             text_widget.see(tk.END)
 
 root = tk.Tk()
-root.title("PoB Injector - Logs del Servidor")
+root.title("PoB Injector - Server Logs")
 root.geometry("800x500")
 root.configure(bg="#1e1e1e")
 

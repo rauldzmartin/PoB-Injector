@@ -54,10 +54,23 @@ def toggle_console(icon, item):
         viewer_path = os.path.join(HERE, "log_viewer.py")
         viewer_process = subprocess.Popen([pythonw_exe, viewer_path], cwd=HERE)
 
+current_channel = "dev"
+
+def set_channel(channel):
+    def inner(icon, item):
+        global current_channel
+        current_channel = channel
+    return inner
+
+def is_channel(channel):
+    def inner(item):
+        return current_channel == channel
+    return inner
+
 def trigger_update(icon, item):
     import urllib.request
     try:
-        req = urllib.request.Request("http://127.0.0.1:5000/update?branch=dev", method="POST")
+        req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}", method="POST")
         urllib.request.urlopen(req)
     except Exception as e:
         print(f"Update failed: {e}")
@@ -78,10 +91,16 @@ def quit_app(icon, item):
 def create_tray():
     image = Image.open(ICON_PATH)
     
+    channel_menu = pystray.Menu(
+        pystray.MenuItem("Stable", set_channel("main"), checked=is_channel("main"), radio=True),
+        pystray.MenuItem("Beta", set_channel("dev"), checked=is_channel("dev"), radio=True)
+    )
+    
     menu = pystray.Menu(
-        pystray.MenuItem("Mostrar / Ocultar Consola", toggle_console),
-        pystray.MenuItem("Actualizar", trigger_update),
-        pystray.MenuItem("Cerrar", quit_app)
+        pystray.MenuItem("Toggle Console", toggle_console),
+        pystray.MenuItem("Update", trigger_update),
+        pystray.MenuItem("Update Channel", channel_menu),
+        pystray.MenuItem("Quit", quit_app)
     )
     
     icon = pystray.Icon("PoB Injector", image, "PoB Injector Server", menu)
