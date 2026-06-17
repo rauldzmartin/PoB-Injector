@@ -69,7 +69,13 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.5i")
+app = FastAPI(title="PoB HTTP API", version="0.5j")
+
+@app.on_event("startup")
+async def startup_event():
+    print(f"\n======================================")
+    print(f"  PoB Injector Server v{app.version}")
+    print(f"======================================\n")
 
 app.add_middleware(
     CORSMiddleware,
@@ -142,9 +148,15 @@ def update(branch: str = "main"):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
     
+    python_exe = sys.executable
+    if "uvicorn" in python_exe.lower():
+        python_exe = os.path.join(os.path.dirname(python_exe), "python.exe")
+        if not os.path.exists(python_exe):
+            python_exe = "python"
+            
     # Spawn updater in a new console so it survives
     creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
+    subprocess.Popen([python_exe, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
     def kill_me():
