@@ -147,8 +147,9 @@ GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 @app.get("/check-update")
 def check_update(branch: str = "main"):
     try:
-        import urllib.request, json
-        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json"
+        import urllib.request, json, time
+        timestamp = int(time.time())
+        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json?t={timestamp}"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as resp:
             if resp.status == 200:
