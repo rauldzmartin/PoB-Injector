@@ -2,15 +2,15 @@
   "manifest_version": 3,
   "name": "PoB Injector",
   "version": "0.5",
-  "version_name": "0.5j",
+  "version_name": "0.5k",
   "description": "Inline PoB impact for trade/trade2 via local FastAPI HTTP server",
   "action": {
     "default_title": "PoB Injector",
     "default_icon": {
-      "16": "img/icon-16.png",
-      "32": "img/icon-32.png",
-      "128": "img/icon-128.png",
-      "335": "img/icon-335.png"
+      "16": "img/icon.png",
+      "32": "img/icon.png",
+      "128": "img/icon.png",
+      "335": "img/icon.png"
     }
   },
   "permissions": [
@@ -53,9 +53,9 @@
     }
   ],
   "icons": {
-    "16": "img/icon-16.png",
-    "32": "img/icon-32.png",
-    "128": "img/icon-128.png",
-    "335": "img/icon-335.png"
+    "16": "img/icon.png",
+    "32": "img/icon.png",
+    "128": "img/icon.png",
+    "335": "img/icon.png"
   }
 }
