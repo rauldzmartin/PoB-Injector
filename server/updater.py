@@ -9,7 +9,9 @@ def main():
     print("Waiting for server to shut down...")
     time.sleep(3)
     
-    zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
+    # Append timestamp to bypass GitHub's aggressive zip cache (5 minutes)
+    timestamp = int(time.time())
+    zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip?t={timestamp}"
     zip_path = os.path.join(here, "update.zip")
     
     print(f"Downloading update from {zip_url}...")
