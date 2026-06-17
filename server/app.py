@@ -115,24 +115,25 @@ GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 @app.get("/check-update")
 def check_update(branch: str = "main"):
     try:
-        import requests, json
+        import urllib.request, json
         url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json"
-        resp = requests.get(url, timeout=5)
-        if resp.status_code == 200:
-            remote_manifest = resp.json()
-            remote_version = remote_manifest.get("version_name", "")
-            
-            local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
-            local_version = ""
-            if os.path.exists(local_manifest_path):
-                with open(local_manifest_path, "r", encoding="utf-8") as f:
-                    local_manifest = json.load(f)
-                    local_version = local_manifest.get("version_name", "")
-                    
-            if remote_version and local_version and remote_version != local_version:
-                return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
-            return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
-        return {"update_available": False, "error": f"HTTP {resp.status_code}"}
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                remote_manifest = json.loads(resp.read().decode('utf-8'))
+                remote_version = remote_manifest.get("version_name", "")
+                
+                local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+                local_version = ""
+                if os.path.exists(local_manifest_path):
+                    with open(local_manifest_path, "r", encoding="utf-8") as f:
+                        local_manifest = json.load(f)
+                        local_version = local_manifest.get("version_name", "")
+                        
+                if remote_version and local_version and remote_version != local_version:
+                    return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
+                return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
+            return {"update_available": False, "error": f"HTTP {resp.status}"}
     except Exception as e:
         return {"update_available": False, "error": str(e)}
 
