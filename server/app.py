@@ -75,8 +75,30 @@ except Exception as e:
 
 app = FastAPI(title="PoB HTTP API", version="0.6")
 
+import logging
+
+class AccessFormatter(logging.Formatter):
+    def format(self, record):
+        if len(record.args) == 5:
+            record.msg = '"%s %s HTTP/%s" %d'
+            record.args = (record.args[1], record.args[2], record.args[3], record.args[4])
+        return super().format(record)
+
+def setup_logging():
+    formatter = logging.Formatter(f"[v{app.version}] %(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S")
+    acc_formatter = AccessFormatter(f"[v{app.version}] %(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S")
+    
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        logger = logging.getLogger(name)
+        for handler in logger.handlers:
+            if name == "uvicorn.access":
+                handler.setFormatter(acc_formatter)
+            else:
+                handler.setFormatter(formatter)
+
 @app.on_event("startup")
 async def startup_event():
+    setup_logging()
     print(f"\n======================================")
     print(f"  PoB Injector Server v{app.version}")
     print(f"======================================\n")

@@ -19,6 +19,7 @@ releases/
 # Misc
 *.bak
 *.orig
+*.log
 
 # Python / Server
 __pycache__/
