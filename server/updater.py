@@ -90,7 +90,28 @@ def main():
     
     print("Restarting server...")
     run_bat = os.path.join(repo_root, "start.bat")
-    subprocess.Popen(["cmd.exe", "/c", run_bat], cwd=repo_root, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(["cmd.exe", "/c", run_bat], cwd=repo_root, creationflags=0x08000000)
 
 if __name__ == "__main__":
-    main()
+    here = os.path.dirname(os.path.abspath(__file__))
+    log_file = open(os.path.join(here, "updater.log"), "w", encoding="utf-8")
+    sys.stdout = log_file
+    sys.stderr = log_file
+    
+    try:
+        main()
+    except Exception as e:
+        import traceback, tkinter as tk, subprocess
+        from tkinter import messagebox
+        traceback.print_exc()
+        log_file.close()
+        
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        if messagebox.showerror("PoB Injector Updater", f"Hubo un error en la actualización.\n\n{str(e)}\n\n¿Quieres ver los logs detallados?", type=messagebox.YESNO) == messagebox.YES:
+            pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
+            if not os.path.exists(pythonw_exe):
+                pythonw_exe = sys.executable
+            subprocess.Popen([pythonw_exe, os.path.join(here, "log_viewer.py"), "updater.log"], cwd=here)
+        sys.exit(1)

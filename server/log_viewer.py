@@ -24,7 +24,12 @@ root.configure(bg="#1e1e1e")
 text = tk.Text(root, bg="#1e1e1e", fg="#d4d4d4", font=("Consolas", 10), borderwidth=0, highlightthickness=0)
 text.pack(expand=True, fill="both", padx=10, pady=10)
 
-log_path = os.path.join(os.path.dirname(__file__), "server.log")
+import sys
+target_log = "server.log"
+if len(sys.argv) > 1:
+    target_log = sys.argv[1]
+
+log_path = os.path.join(os.path.dirname(__file__), target_log)
 if not os.path.exists(log_path):
     open(log_path, 'w').close()
 
