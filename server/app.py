@@ -156,7 +156,8 @@ def update(branch: str = "main"):
             
     # Spawn updater in a new console so it survives
     creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    subprocess.Popen([python_exe, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
+    cmd_str = f'cmd.exe /k ""{python_exe}" "{updater_path}" {GITHUB_REPO} {branch}"'
+    subprocess.Popen(cmd_str, cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
     def kill_me():
