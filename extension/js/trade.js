@@ -658,7 +658,7 @@
     updateBtn.textContent = 'UPDATE';
     updateBtn.title = 'A new version is available! Click to update.';
     updateBtn.className = 'pob-btn pob-glow';
-    updateBtn.style.cssText = 'display:none; margin-left: 8px; border-color: #4caf50; color: #81c784; font-weight: bold; padding: 4px 12px;';
+    updateBtn.style.cssText = 'display:none; margin-left: 8px; border-color: #4caf50 !important; color: #81c784 !important; font-weight: bold; padding: 4px 12px;';
     updateBtn.onclick = async () => {
       updateBtn.textContent = 'UPDATING...';
       updateBtn.disabled = true;
