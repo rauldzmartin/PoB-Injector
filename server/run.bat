@@ -13,4 +13,7 @@ call .venv\Scripts\activate
 echo Closing previous processes on port 5000...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do taskkill /F /PID %%a >nul 2>&1
 
-start "" .venv\Scripts\pythonw.exe tray.py
+if not exist ".venv\Scripts\PoB-Injector.exe" (
+  copy /Y ".venv\Scripts\pythonw.exe" ".venv\Scripts\PoB-Injector.exe" >nul
+)
+start "" .venv\Scripts\PoB-Injector.exe tray.py
