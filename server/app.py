@@ -125,6 +125,15 @@ def _ensure_pob():
     global _pob
     if _import_error:
         raise HTTPException(status_code=500, detail=f"Failed to import pob_wrapper: {_import_error}")
+    
+    if _pob is not None:
+        try:
+            if _pob.pob.process.poll() is not None:
+                print("PoB subprocess died, restarting...")
+                _pob = None
+        except Exception:
+            _pob = None
+            
     if _pob is None:
         _pob = PathOfBuilding(pob_path=POB_PATH, pob_install=POB_INSTALL, verbose=True)  # type: ignore
     return _pob
