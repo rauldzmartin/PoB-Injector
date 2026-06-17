@@ -41,17 +41,17 @@ def main():
     try:
         import subprocess
         # Kill whatever is listening on port 5000
-        out = subprocess.check_output('netstat -aon | findstr ":5000" | findstr "LISTENING"', shell=True)
+        out = subprocess.check_output('netstat -aon | findstr ":5000" | findstr "LISTENING"', shell=True, creationflags=0x08000000)
         for line in out.decode().splitlines():
             parts = line.strip().split()
             if len(parts) >= 5:
                 pid = parts[-1]
-                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True, creationflags=0x08000000)
     except:
         pass
 
     try:
-        subprocess.run("taskkill /F /IM luajit.exe", shell=True, capture_output=True)
+        subprocess.run("taskkill /F /IM luajit.exe", shell=True, capture_output=True, creationflags=0x08000000)
     except:
         pass
     
@@ -86,7 +86,7 @@ def main():
         pass
     
     print("Installing dependencies...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")])
+    subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
     
     print("Restarting server...")
     run_vbs = os.path.join(repo_root, "start.vbs")
