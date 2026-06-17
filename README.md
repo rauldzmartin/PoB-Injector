@@ -72,3 +72,5 @@ A tool to seamlessly evaluate Path of Exile 2 items directly from your browser i
 
 - **[Sargas09/ChrometoPob2](https://github.com/Sargas09/ChrometoPob2)**: Developer of this Path of Exile 2 adaptation.
 - **[unremem/PoBTradeHelper](https://github.com/unremem/PoBTradeHelper)**: Original idea and tool for Path of Exile 1.
+
+> **Disclaimer**: The code for this fork has been generated using AI agents.

@@ -57,10 +57,10 @@ if USER_POB_WRAPPER and USER_POB_WRAPPER not in sys.path:
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
-PY_SRC = os.path.join(REPO_ROOT, "pob_wrapper")
+PY_SRC = os.path.join(HERE, "pob_wrapper")
 
-if os.path.exists(PY_SRC) and REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
+if os.path.exists(PY_SRC) and HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 try:
     from pob_wrapper import PathOfBuilding, ExternalError  # type: ignore
@@ -114,10 +114,10 @@ def status():
 GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 
 @app.get("/check-update")
-def check_update():
+def check_update(branch: str = "main"):
     try:
         import requests, json
-        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/extension/manifest.json"
+        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json"
         resp = requests.get(url, timeout=5)
         if resp.status_code == 200:
             remote_manifest = resp.json()
@@ -138,13 +138,13 @@ def check_update():
         return {"update_available": False, "error": str(e)}
 
 @app.post("/update")
-def update():
+def update(branch: str = "main"):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
     
     # Spawn updater in a new console so it survives
     creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO], cwd=HERE, creationflags=creation_flags)
+    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
     def kill_me():

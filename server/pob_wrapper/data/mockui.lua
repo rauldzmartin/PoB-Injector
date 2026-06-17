@@ -194,11 +194,15 @@ end
 
 -- ==== convenience for wrapper ====
 build = mainObject.main.modes["BUILD"]
-calcs = build.calcsTab.calcs
+if build.calcsTab then
+    calcs = build.calcsTab.calcs
+end
 
 function newBuild()
     mainObject.main:SetMode("BUILD", false, "Headless PoB")
     runCallback("OnFrame")
+    build = mainObject.main.modes["BUILD"]
+    if build.calcsTab then calcs = build.calcsTab.calcs end
 end
 
 function loadBuildFromPath(path)
@@ -206,11 +210,15 @@ function loadBuildFromPath(path)
     local buildName = (fileName or ""):gsub("%.xml$","")
     mainObject.main:SetMode("BUILD", path, buildName)
     runCallback("OnFrame")
+    build = mainObject.main.modes["BUILD"]
+    if build.calcsTab then calcs = build.calcsTab.calcs end
 end
 
 function loadBuildFromXML(xmlText)
     mainObject.main:SetMode("BUILD", false, "", xmlText)
     runCallback("OnFrame")
+    build = mainObject.main.modes["BUILD"]
+    if build.calcsTab then calcs = build.calcsTab.calcs end
 end
 
 function loadBuildFromJSON(getItemsJSON, getPassiveSkillsJSON)

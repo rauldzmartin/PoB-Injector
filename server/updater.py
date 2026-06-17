@@ -2,13 +2,14 @@ import sys, os, time, urllib.request, zipfile, shutil, subprocess
 
 def main():
     repo = sys.argv[1] if len(sys.argv) > 1 else "rauldzmartin/PoB-Injector"
+    branch = sys.argv[2] if len(sys.argv) > 2 else "main"
     here = os.path.abspath(os.path.dirname(__file__))
     repo_root = os.path.abspath(os.path.join(here, ".."))
     
     print("Waiting for server to shut down...")
     time.sleep(3)
     
-    zip_url = f"https://github.com/{repo}/archive/refs/heads/main.zip"
+    zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
     zip_path = os.path.join(here, "update.zip")
     
     print(f"Downloading update from {zip_url}...")

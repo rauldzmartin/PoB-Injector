@@ -48,13 +48,15 @@
       return res.json();
     },
     async triggerUpdate() {
-      const res = await fetch(`${this.base}/update`, { method: 'POST' });
+      const branch = cfg.useDevBranch ? 'dev' : 'main';
+      const res = await fetch(`${this.base}/update?branch=${branch}`, { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     async checkUpdate() {
       try {
-        const res = await fetch(`${this.base}/check-update`);
+        const branch = cfg.useDevBranch ? 'dev' : 'main';
+        const res = await fetch(`${this.base}/check-update?branch=${branch}`);
         if (!res.ok) return false;
         const data = await res.json();
         return data.update_available;
@@ -598,6 +600,8 @@
     statusMsg.textContent = 'Server Offline';
 
     let serverOnline = true;
+    let isSettingsOpen = false;
+    let settingsContent;
 
     const updateBtns = () => {
       if (!serverOnline) {
@@ -609,11 +613,13 @@
         onBtn.disabled = true;
         onBtn.title = 'Start the local server (start.bat) and refresh the page to enable.';
         if (typeof innerContent !== 'undefined') innerContent.style.display = 'none';
-        if (typeof offlineOverlay !== 'undefined') offlineOverlay.style.display = 'flex';
+        if (settingsContent) settingsContent.style.display = isSettingsOpen ? 'flex' : 'none';
+        if (typeof offlineOverlay !== 'undefined') offlineOverlay.style.display = isSettingsOpen ? 'none' : 'flex';
       } else {
         onBtn.disabled = false;
         onBtn.title = 'Activar evaluación automática';
-        if (typeof innerContent !== 'undefined') innerContent.style.display = 'flex';
+        if (typeof innerContent !== 'undefined') innerContent.style.display = isSettingsOpen ? 'none' : 'flex';
+        if (settingsContent) settingsContent.style.display = isSettingsOpen ? 'flex' : 'none';
         if (typeof offlineOverlay !== 'undefined') offlineOverlay.style.display = 'none';
       }
       onBtn.className = 'pob-btn' + (autoEnabled ? ' pob-btn-on active' : '');
@@ -678,7 +684,26 @@
       pollOnline();
     };
 
-    navbar.append(onBtn, offBtn, spacer, statusMsg, applyBtn, updateBtn);
+    const settingsBtn = document.createElement('button');
+    settingsBtn.innerHTML = '⚙️';
+    settingsBtn.title = 'Settings';
+    settingsBtn.className = 'pob-btn';
+    settingsBtn.style.cssText = 'margin-left: 8px; font-size: 14px; padding: 2px 6px;';
+    
+    settingsBtn.onclick = (e) => {
+      isSettingsOpen = !isSettingsOpen;
+      updateBtns();
+      if (isSettingsOpen) {
+        settingsBtn.classList.add('pob-glow');
+        settingsBtn.style.borderColor = '#c8a84a';
+      } else {
+        settingsBtn.classList.remove('pob-glow');
+        settingsBtn.style.borderColor = '';
+      }
+      e.stopPropagation();
+    };
+
+    navbar.append(onBtn, offBtn, spacer, statusMsg, applyBtn, updateBtn, settingsBtn);
 
     setInterval(async () => {
       if (serverOnline) {
@@ -1062,6 +1087,24 @@
 
     innerContent.append(buildRow, typeLbl, amuletBlock, socketBlock, otherStatsBlock);
     updateSectionVisibility();
+    
+    settingsContent = document.createElement('div');
+    settingsContent.style.cssText = 'display:none; flex-direction: column; gap: 0;';
+    
+    const devOptIn = makeSwitch('pob-dev-branch', cfg.useDevBranch, 'Developer Releases', 'Opt-in to dev branch updates', v => {
+      cfg.useDevBranch = v;
+      saveCfg();
+    });
+    
+    const settingsInner = document.createElement('div');
+    settingsInner.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-top:4px; margin-left:6px; margin-bottom: 12px;';
+    settingsInner.append(devOptIn.row);
+    
+    const settingsBlock = makeSection('Updates', null, settingsInner);
+    settingsBlock.id = 'pob-settings-block';
+    settingsContent.append(settingsBlock);
+    
+    content.append(innerContent, settingsContent, offlineOverlay);
     body.append(navbar, content);
 
     const rightCol = document.createElement('div');
