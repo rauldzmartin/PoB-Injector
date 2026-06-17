@@ -36,6 +36,11 @@ def main():
         return
     source_root = os.path.join(extract_dir, subdirs[0])
     
+    try:
+        subprocess.run(["taskkill", "/F", "/IM", "luajit.exe"], capture_output=True)
+    except:
+        pass
+    
     print("Replacing files...")
     for item in os.listdir(source_root):
         s = os.path.join(source_root, item)

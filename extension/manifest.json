@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PoB Injector",
   "version": "0.5",
-  "version_name": "0.5k",
+  "version_name": "0.5m",
   "description": "Inline PoB impact for trade/trade2 via local FastAPI HTTP server",
   "action": {
     "default_title": "PoB Injector",

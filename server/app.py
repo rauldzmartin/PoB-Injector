@@ -69,7 +69,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.5k")
+app = FastAPI(title="PoB HTTP API", version="0.5m")
 
 @app.on_event("startup")
 async def startup_event():
