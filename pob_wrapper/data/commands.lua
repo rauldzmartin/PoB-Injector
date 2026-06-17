@@ -93,6 +93,12 @@ function commands.testItemForDisplay(itemText)
     return results
 end
 
+function commands.importItem(itemText)
+    print("Importing item")
+    local results = pobinterface.importItem(itemText)
+    return results
+end
+
 function commands.getKeys(tab)
     local keys = {}
     for k,v in pairs(tab) do

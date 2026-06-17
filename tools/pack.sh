@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DIST_DIR="$ROOT_DIR/dist"
+RELEASES_DIR="$ROOT_DIR/releases"
 EXT_DIR="$ROOT_DIR"
 
 # Try to find manifest.json within repo
@@ -18,10 +18,18 @@ else
   done
 fi
 
-mkdir -p "$DIST_DIR"
-ZIP_NAME="extension-$(date +%Y%m%d-%H%M%S).zip"
+VERSION=$(grep -oP '"version_name": "\K[^"]+' "$EXT_DIR/manifest.json" || true)
+if [ -z "$VERSION" ]; then
+  VERSION=$(grep -oP '"version": "\K[^"]+' "$EXT_DIR/manifest.json" || true)
+fi
+if [ -z "$VERSION" ]; then
+  VERSION="$(date +%Y%m%d-%H%M%S)"
+fi
+
+mkdir -p "$RELEASES_DIR"
+ZIP_NAME="PoB_Injector_Release_v${VERSION}.zip"
 (
   cd "$EXT_DIR"
-  zip -r "$DIST_DIR/$ZIP_NAME" . -x "*.DS_Store" -x "*.bak" -x "node_modules/*" >/dev/null
+  zip -r "$RELEASES_DIR/$ZIP_NAME" . -x "*.DS_Store" -x "*.bak" -x "node_modules/*" >/dev/null
 )
-echo "Wrote $DIST_DIR/$ZIP_NAME"
+echo "Wrote $RELEASES_DIR/$ZIP_NAME"

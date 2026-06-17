@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "ChrometoPob2",
+  "name": "PoB Injector",
   "version": "0.5",
+  "version_name": "0.5f",
   "description": "Inline PoB impact for trade/trade2 via local FastAPI HTTP server",
   "action": {
-    "default_title": "ChrometoPob2",
+    "default_title": "PoB Injector",
     "default_icon": {
       "16": "img/icon-16.png",
       "32": "img/icon-32.png",
@@ -20,6 +21,9 @@
     "http://127.0.0.1:5000/*",
     "http://localhost:5000/*"
   ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -40,7 +44,8 @@
       "resources": [
         "js/trade-injected.js",
         "img/icon-40.png",
-        "img/error-40.png"
+        "img/error-40.png",
+        "img/icon.png"
       ],
       "matches": [
         "<all_urls>"

@@ -19,3 +19,14 @@ dist/
 # Misc
 *.bak
 *.orig
+opencode.jsonc
+
+# Python / Server
+__pycache__/
+*.py[cod]
+server/.env
+server/.venv/
+
+# Antigravity IDE
+.agents/
+scratch/

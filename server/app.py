@@ -7,20 +7,59 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-POB_INSTALL = r"C:\Users\Dav 2\AppData\Roaming\Path of Building Community (PoE2)"
-POB_PATH    = r"C:\Users\Dav 2\AppData\Roaming\Path of Building Community (PoE2)"
-HARDCODED_BUILD = r"C:\Users\Dav 2\Documents\Path of Building (PoE2)\Builds\1\Shockburster Deadeye.xml"
-MOD_RUNES_PATH = r"C:\Users\Dav 2\AppData\Roaming\Path of Building Community (PoE2)\Data\ModRunes.lua"
-MOD_ENCHANTS_PATH = r"C:\Users\Dav 2\AppData\Roaming\Path of Building Community (PoE2)\Data\QueryMods.lua"
+from dotenv import load_dotenv
+load_dotenv()
 
-USER_POB_WRAPPER = r"C:\PoBHttpServer"
+POB_INSTALL_ENV = os.getenv("POB_INSTALL")
+
+def _find_pob_install() -> str:
+    # 1. Check from .env
+    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "lua", "init.lua")):
+        return POB_INSTALL_ENV
+
+    # 2. Check if PoB is running
+    try:
+        import win32com.client
+        wmi = win32com.client.GetObject('winmgmts:')
+        for p in wmi.InstancesOf('win32_process'):
+            if p.Name and p.Name.lower() == 'path of building.exe':
+                if p.ExecutablePath:
+                    pob_dir = os.path.dirname(p.ExecutablePath)
+                    if os.path.exists(os.path.join(pob_dir, "lua", "init.lua")):
+                        return pob_dir
+    except Exception as e:
+        print(f"Error checking WMI for running PoB: {e}")
+
+    # 3. Check common locations
+    common = [
+        r"C:\ProgramData\Path of Building Community",
+        os.path.expandvars(r"%APPDATA%\Path of Building Community"),
+        os.path.expandvars(r"%PROGRAMDATA%\Path of Building Community"),
+        os.path.expandvars(r"%LOCALAPPDATA%\Path of Building Community"),
+        os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community")
+    ]
+    for p in common:
+        if os.path.exists(os.path.join(p, "lua", "init.lua")):
+            return p
+
+    # Fallback
+    return POB_INSTALL_ENV if POB_INSTALL_ENV else r"D:\FINAL\Juegos\Path Of Exile\Utilities\Path Of Building Community"
+
+POB_INSTALL = _find_pob_install()
+POB_PATH    = os.getenv("POB_PATH", POB_INSTALL)
+HARDCODED_BUILD = os.getenv("HARDCODED_BUILD", os.path.join(POB_INSTALL, r"Builds\0.5\MERC.xml"))
+MOD_RUNES_PATH = os.getenv("MOD_RUNES_PATH", os.path.join(POB_INSTALL, r"Data\ModRunes.lua"))
+MOD_ENCHANTS_PATH = os.getenv("MOD_ENCHANTS_PATH", os.path.join(POB_INSTALL, r"Data\QueryMods.lua"))
+
+USER_POB_WRAPPER = os.getenv("USER_POB_WRAPPER")
 if USER_POB_WRAPPER and USER_POB_WRAPPER not in sys.path:
     sys.path.insert(0, USER_POB_WRAPPER)
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
-PY_SRC = os.path.join(REPO_ROOT, "PoBHttpServer", "pob_wrapper")
-if os.path.exists(PY_SRC) and PY_SRC not in sys.path:
+PY_SRC = os.path.join(REPO_ROOT, "pob_wrapper")
+
+if os.path.exists(PY_SRC) and REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 try:
@@ -31,7 +70,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.3")
+app = FastAPI(title="PoB HTTP API", version="0.3e")
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,6 +88,7 @@ class LoadReq(BaseModel):
 
 class ImpactReq(BaseModel):
     item: Optional[str] = None
+    maxQuality: Optional[bool] = False
 
 def _ensure_pob():
     global _pob
@@ -71,17 +111,138 @@ def _try_b64(s: str) -> str:
 def status():
     return {"running": _pob is not None, "import_error": str(_import_error) if _import_error else None}
 
+GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
+
+@app.get("/check-update")
+def check_update():
+    try:
+        import requests, json
+        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/extension/manifest.json"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            remote_manifest = resp.json()
+            remote_version = remote_manifest.get("version_name", "")
+            
+            local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+            local_version = ""
+            if os.path.exists(local_manifest_path):
+                with open(local_manifest_path, "r", encoding="utf-8") as f:
+                    local_manifest = json.load(f)
+                    local_version = local_manifest.get("version_name", "")
+                    
+            if remote_version and local_version and remote_version != local_version:
+                return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
+            return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
+        return {"update_available": False, "error": f"HTTP {resp.status_code}"}
+    except Exception as e:
+        return {"update_available": False, "error": str(e)}
+
+@app.post("/update")
+def update():
+    import subprocess
+    updater_path = os.path.join(HERE, "updater.py")
+    
+    # Spawn updater in a new console so it survives
+    creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
+    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO], cwd=HERE, creationflags=creation_flags)
+    
+    # Gracefully kill uvicorn
+    def kill_me():
+        import time
+        time.sleep(1)
+        os._exit(0)
+    threading.Thread(target=kill_me).start()
+    return {"status": "updating"}
+
+def _get_active_build() -> str:
+    settings_path = os.path.join(POB_INSTALL, "Settings.xml")
+    if os.path.exists(settings_path):
+        try:
+            import xml.etree.ElementTree as ET
+            tree = ET.parse(settings_path)
+            root = tree.getroot()
+            mode = root.find("./Mode[@mode='BUILD']")
+            if mode is not None:
+                for arg in mode.findall("./Arg"):
+                    if 'string' in arg.attrib:
+                        build_path = arg.attrib['string']
+                        if not os.path.isabs(build_path):
+                            build_path = os.path.join(POB_INSTALL, "Builds", build_path)
+                            if not build_path.endswith(".xml"):
+                                build_path += ".xml"
+                        if os.path.exists(build_path):
+                            return build_path
+        except Exception as e:
+            print(f"Error parsing Settings.xml: {e}")
+            
+    if os.path.exists(HARDCODED_BUILD):
+        return HARDCODED_BUILD
+        
+    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    if os.path.exists(builds_dir):
+        for root_dir, dirs, files in os.walk(builds_dir):
+            for file in files:
+                if file.lower().endswith(".xml"):
+                    return os.path.join(root_dir, file)
+                    
+    return HARDCODED_BUILD
+
+_loaded_build_path = None
+_loaded_build_mtime = 0
+
+def _auto_reload_if_needed(pob):
+    global _loaded_build_mtime, _loaded_build_path
+    if _loaded_build_path and os.path.exists(_loaded_build_path):
+        mtime = os.path.getmtime(_loaded_build_path)
+        if mtime > _loaded_build_mtime:
+            pob.load_build(_loaded_build_path)
+            _loaded_build_mtime = mtime
+
 @app.post("/load_pob")
 def load_pob(req: LoadReq):
+    global _loaded_build_path, _loaded_build_mtime
     with _lock:
         pob = _ensure_pob()
-        build = (req.path or "").strip() or HARDCODED_BUILD
-        build = _try_b64(build)
+        build = (req.path or "").strip()
+        if not build:
+            build = _get_active_build()
+        else:
+            build = _try_b64(build)
+            if not os.path.isabs(build):
+                build = os.path.join(POB_INSTALL, "Builds", build)
+                if not build.endswith(".xml"):
+                    build += ".xml"
         try:
             pob.load_build(build)
+            _loaded_build_path = build
+            if os.path.exists(build):
+                _loaded_build_mtime = os.path.getmtime(build)
         except ExternalError as e:  # type: ignore
             raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
     return {"status": "ok"}
+
+@app.get("/builds")
+def list_builds():
+    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    if not os.path.exists(builds_dir):
+        return []
+    
+    found = []
+    for root, dirs, files in os.walk(builds_dir):
+        for file in files:
+            if file.lower().endswith(".xml"):
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, builds_dir)
+                rel_path_no_ext = os.path.splitext(rel_path)[0]
+                rel_path_no_ext = rel_path_no_ext.replace("\\", "/")
+                basename = os.path.splitext(file)[0]
+                found.append({
+                    "path": rel_path_no_ext,
+                    "name": basename
+                })
+    # Sort alphabetically by path
+    found.sort(key=lambda x: x["path"].lower())
+    return found
 
 @app.post("/item-impact")
 def item_impact(req: ImpactReq):
@@ -89,13 +250,33 @@ def item_impact(req: ImpactReq):
         raise HTTPException(status_code=400, detail="Empty or invalid item text")
     with _lock:
         pob = _ensure_pob()
+        _auto_reload_if_needed(pob)
         try:
-            html = pob.test_item_as_html(req.item)
+            res = pob.test_item_as_html(req.item, req.maxQuality)
+            html = res.get("html", "")
+            unsupported = res.get("unsupported", [])
+            if html:
+                html = re.sub(r'(?:<br>)?\s*(?:\^x[0-9A-Fa-f]{6})?Tip: Press Ctrl\+D to disable the display of stat differences\.?', '', html, flags=re.IGNORECASE)
+                html = re.sub(r'(?:<br>)+$', '', html.strip())
         except ExternalError as e:  # type: ignore
             raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
     if not html:
-        raise HTTPException(status_code=422, detail="PoB returned no output for this item")
-    return {"html": html}
+        return {"html": "", "unsupported": []}
+    return {"html": html, "unsupported": unsupported}
+
+@app.post("/import-item")
+def import_item(req: ImpactReq):
+    if req.item is None or not isinstance(req.item, str) or not req.item.strip() or req.item.strip().lower() == "null":
+        raise HTTPException(status_code=400, detail="Empty or invalid item text")
+    with _lock:
+        pob = _ensure_pob()
+        try:
+            result = pob.import_item(req.item, req.maxQuality)
+            if result != "Success":
+                raise HTTPException(status_code=500, detail=str(result))
+        except ExternalError as e:  # type: ignore
+            raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
+    return {"status": "ok"}
 
 @lru_cache
 def _load_runes_table():

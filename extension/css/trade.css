@@ -9,3 +9,30 @@
   vertical-align: top;
   margin: 5px;
 }
+
+.pob-sortable-stat {
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 3px;
+}
+.pob-sortable-stat:hover {
+  background: rgba(255,255,255,0.08);
+}
+.pob-sortable-stat.sort-active {
+  background: rgba(255,200,0,0.12);
+  box-shadow: inset 2px 0 0 rgba(255,200,0,0.5);
+}
+
+.pob-sort-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font: 13px/1.4 system-ui, sans-serif;
+  z-index: 999999;
+  border: 1px solid #444;
+  backdrop-filter: blur(4px);
+}

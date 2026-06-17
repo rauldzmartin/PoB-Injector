@@ -32,8 +32,7 @@ function pobinterface.saveBuild()
         error("Unable to save - no build path set")
     end
 
-    build.actionOnSave = nil -- Avoid post-save actions like app update, exit
-    build:SaveDBFile()
+    pobinterface.saveBuildAs(build.dbFileName)
 end
 
 
@@ -256,11 +255,13 @@ function pobinterface.findModEffect(modLine)
 end
 
 
-function pobinterface.testItemForDisplay(itemText)
+function pobinterface.testItemForDisplay(itemText, maxQuality)
     local item = newItem(itemText)
 
     if item.base then
-        item:NormaliseQuality() -- Set to top quality
+        if maxQuality then
+            item:NormaliseQuality()
+        end
         item:BuildModList()
 
         -- Extract new item's info to a fake tooltip
@@ -272,5 +273,19 @@ function pobinterface.testItemForDisplay(itemText)
 
 end
 
+
+function pobinterface.importItem(itemText, maxQuality)
+    local item = newItem(itemText)
+    if item.base then
+        if maxQuality then
+            item:NormaliseQuality()
+        end
+        item:BuildModList()
+        build.itemsTab:AddItem(item, true) -- true means noAutoEquip
+        pobinterface.saveBuild()
+        return "Success"
+    end
+    return "Failure"
+end
 
 return pobinterface

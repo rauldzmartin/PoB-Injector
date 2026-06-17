@@ -1,104 +1,74 @@
-# PoB HTTP Server — Chrome Extension (PoE2)
+# PoB Injector
 
-> Inspired by the idea of [unremem/PoBTradeHelper](https://github.com/unremem/PoBTradeHelper).  
-> **This project targets Path of Exile 2 and is not compatible with the original PoE1 tool.**
+A tool to seamlessly evaluate Path of Exile 2 items directly from your browser into Path of Building.
 
-This Chrome extension sends an item you select on <https://www.pathofexile.com/trade2> to a local **Path of Building (PoE2) HTTP server** and shows its **item impact**. It also supports:
+## Features
 
-- **Rune overrides**
-- **Socket adjustments**
-- **Amulet enchants** (with preview)
+### 🔍 Automatic Item Evaluation
+- Hover over any item on the PoE2 trade site to instantly see its PoB impact compared to your active build.
+- Evaluations appear inline, without leaving the page.
+- Results are cached and survive pagination; pressing Search invalidates the cache automatically.
 
-![example](img/example.jpg)
----
+### ⚙️ Rune Overrides (Sockets section)
+- **All sockets** — Apply a single rune to all available sockets on the hovered item.
+- **Per socket** — Assign a specific rune to each socket individually.
+- **Fill sockets** — Simulate adding missing sockets up to the item's maximum before evaluation.
+- A **Clear** button (✕) appears in the section header whenever any socket configuration is active, resetting all settings in one click.
+- Socket overrides are **saved per item type** and restored automatically when switching between different categories.
+
+### 💎 Amulet Anointments (Amulets section)
+- Visible only when the hovered item is an Amulet.
+- **Override enchant** — Select an anointment from the full list served by the backend and apply it before evaluation; takes effect immediately without pressing Apply.
+- If the amulet is **Corrupted**, the override is silently skipped and a warning is shown in the item wrapper.
+
+### 🎯 Other Adjustments section
+- **Max quality** — Normalize the item's quality to 20% before evaluation, stripping raw damage/defence numbers so PoB calculates from a clean baseline.
+
+### 🔢 Item Impact Display
+- PoB output is shown inline next to each item with stat deltas (DPS gain, defence changes, etc.).
+- Stats are **clickable** — click any stat line to sort all visible results by that value (ascending/descending toggle).
+- Sorting automatically loads all available pages before ranking.
+
+### 📥 Import to Build
+- Each item includes an **"Add this item to your build as unused"** button that imports it directly into PoB via the local server.
+
+### 🌐 Server Status
+- The extension monitors the local server continuously.
+- If the server goes offline, an overlay is shown and evaluations are paused until it recovers.
+
+### 🔄 ON / OFF Toggle
+- Globally enable or disable automatic evaluation without reloading the page.
 
 ## Prerequisites
 
-- **Windows** (uses `pywin32` underneath)
-- **Path of Building Community (PoE2)** installed and at least one build saved
-- **Python 3.10+** (recommended)
-- Google **Chrome**
+- **Python 3.x**: If you don't have it, the installer (`install.bat`) will automatically download and set up Python 3.13 for you.
+- **Path of Building Community (PoB)**: Installed on your system.
 
----
+## 1. Local Server Setup
 
-## Quick Start (Development)
+1. Run `install.bat` located in the root directory.
+2. The script will automatically detect or ask for your Path of Building installation directory.
 
-### 1) Get the code
+*Note: The server automatically detects your currently active PoB build profile from `Settings.xml`.*
 
-Clone or copy the project to a convenient folder, e.g.:
+4. The script will set up a virtual environment (`.venv`) and install all required dependencies.
+5. At the end of the script, you can choose to start the server immediately. To start it later, run `start.bat`.
 
-```
-C:\ChrometoPob2
-```
+## 2. Extension Installation (Chrome / Brave)
 
-### 2) Configure server paths
+1. Open your browser and navigate to `chrome://extensions/` (Chrome) or `brave://extensions/` (Brave).
+2. Enable **Developer mode** in the top right corner.
+3. Click on **Load unpacked**.
+4. Select the `extension` folder located in the root directory of this project.
+5. The extension will be installed and enabled.
 
-Edit `C:\ChrometoPob2\server\app.py` and update the following paths. Replace `username` with your Windows user name.
+## Usage
 
-```python
-# Path of Building installation (PoE2)
-POB_INSTALL = r"C:\Users\username\AppData\Roaming\Path of Building Community (PoE2)"
-POB_PATH    = r"C:\Users\username\AppData\Roaming\Path of Building Community (PoE2)"
-
-# A PoB build file to load by default (change to any saved build you have)
-HARDCODED_BUILD = r"C:\Users\username\Documents\Path of Building (PoE2)\Builds\1\Shockburster Deadeye.xml"
-
-# Paths to PoB data files
-MOD_RUNES_PATH    = r"C:\Users\username\AppData\Roaming\Path of Building Community (PoE2)\Data\ModRunes.lua"
-MOD_ENCHANTS_PATH = r"C:\Users\username\AppData\Roaming\Path of Building Community (PoE2)\Data\QueryMods.lua"
-
-# Where this repo lives on your drive
-USER_POB_WRAPPER = r"C:\ChrometoPob2"
-```
-
-Make sure the directories and files exist on your machine.
-
-### 3) Start the HTTP server
-
-Open a terminal and run:
-
-```
-C:\ChrometoPob2\server\run.bat
-```
-
-On first run, it will create a virtual environment and install dependencies. You should then see Uvicorn start, e.g.:
-
-```
-INFO:     Will watch for changes in these directories: ['C:\ChrometoPob2\server']
-INFO:     Uvicorn running on http://127.0.0.1:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [8292] using StatReload
-INFO:     Started server process [16612]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-```
-
-### 4) Load the extension in Chrome
-
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked**
-4. Select the folder that contains `manifest.json`, usually:  
-   `C:\ChrometoPob2\extension`
-
-### 5) Use it
-
-Open <https://www.pathofexile.com/trade2>, select an item, and use the extension panel to send the item to the local PoB server. The panel will show runes, sockets, the amulet enchant preview, and the calculated impact.
-
----
-
-## Troubleshooting
-
-- **Server won’t start / missing files**: Double‑check the paths in `server/app.py`.
-- **Cannot connect from the extension**: Ensure the server is running on `http://127.0.0.1:5000` and not blocked by a firewall.
-- **PoB not detected**: Verify your PoB installation path and that your build file exists.
-- **Windows-only**: The server uses `pywin32`, so it currently targets Windows.
-
----
-
-## License
-
-MIT — see [LICENSE](./LICENSE).
+1. Run `start.bat` to start the local server.
+2. Browse items on trade site [https://www.pathofexile.com/trade2/](https://www.pathofexile.com/trade2/).
+3. The extension will automatically compare the items in the market with your items equipped in your active Path of Building build.
 
 ## Credits
 
-- Based on the idea of [unremem/PoBTradeHelper](https://github.com/unremem/PoBTradeHelper). Thanks for the inspiration!
+- **[Sargas09/ChrometoPob2](https://github.com/Sargas09/ChrometoPob2)**: Developer of this Path of Exile 2 adaptation.
+- **[unremem/PoBTradeHelper](https://github.com/unremem/PoBTradeHelper)**: Original idea and tool for Path of Exile 1.

@@ -36,19 +36,60 @@ class ExternalError(Exception):
         super().__init__()
 
 
+_stat_pattern = re.compile(
+    r'^([+-])([\d.,]+%?)([a-zA-Z]*)\s+(.+?)(?:\s+\(([+-][\d.,]+%)\))?$'
+)
+
+
+def _parse_stat_value(s):
+    s = s.rstrip('%')
+    s = s.replace(',', '')  # Remove thousands separator
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
 def _num_string(value):
     return f'{value:.10g}'
 
 
 def _pob_line_to_html(line):
     line = re.sub(r'\^8', r'^x888888', line)  # ^8 is grey
+
+    clean = re.sub(r'\^x[0-9A-F]{6}|\^[78]', '', line)
+
     line = re.sub(r'\^x([0-9A-F]{6})(.*?)(?=$|\^)', r'<span style="color:#\1">\2</span>', line, re.MULTILINE)
     line = re.sub(r'\^7', r'', line)  # ^7 resets to default
     if line == '----':
-        line = '<hr/>'
-    else:
-        line = f'<div>{line}</div>'
-    return line
+        return '<hr/>'
+
+    m = _stat_pattern.match(clean)
+    if m:
+        sign, raw_num, suffix, stat_name, percentage_str = m.groups()
+        abs_val = _parse_stat_value(raw_num)
+        num_val = -abs_val if sign == '-' else abs_val
+
+        _DPS_ICONS = {
+            'ignite': '⚔️🔥',
+            'bleed':  '⚔️🩸',
+            'poison': '⚔️☠️',
+        }
+        display_name = stat_name
+        title_attr = ''
+        if "Total DPS inc." in stat_name:
+            suffix_part = stat_name[len("Total DPS"):].strip()  # e.g. "inc. Ignite"
+            ailment_key = suffix_part.lower().split()[-1]       # last word: ignite/bleed/poison
+            icon = _DPS_ICONS.get(ailment_key, '⚔️')
+            line = line.replace(stat_name, "Total DPS")
+            line += f" {icon}"
+            title_attr = f' title="{suffix_part}"'
+        elif "Effective Hit Pool" in stat_name:
+            line += " ❤️"
+
+        return f'<div data-stat="{stat_name}"{title_attr} data-value="{num_val}">{line}</div>'
+
+    return f'<div>{line}</div>'
 
 
 def _mark_item_groups(output):
@@ -56,9 +97,17 @@ def _mark_item_groups(output):
     # output = f'<div class="item">\n{output[:hr_pos]}</div>\n<hr/>\n<div class="results">\n{output[hr_pos + 6:]}\n</div>'
     # Only send the results back for rendering
     output = f'<div class="results">\n{output[hr_pos + 6:]}\n</div>'
+
     output = re.sub(r'\n(?:<div>)((?:Equipping|Removing) this item.+:)\n(\(.+\))</div>((?:\n.*</div>)+)',
-                    r'<div class="option">\n<div class="hdr1">\1</div>\n<div class="hdr2">\2</div>\3\n</div>\n', output)
+                    r'\n<div class="option" data-sort="\1">\n<div class="hdr1">\1</div>\n<div class="hdr2">\2</div>\n<br>\3\n</div><!-- END_OPTION -->\n', output)
     output = re.sub(r'\n<hr/>\n<hr/>', r'\n<hr/>', output)
+
+    options = re.findall(r'\n<div class="option" data-sort=".*?">.*?<!-- END_OPTION -->\n', output, flags=re.DOTALL)
+    if options:
+        options.sort(key=lambda opt: re.search(r'data-sort="(.*?)"', opt).group(1) if re.search(r'data-sort="(.*?)"', opt) else opt)
+        for i in range(1, len(options)):
+            options[i] = '<br>' + options[i]
+        output = re.sub(r'\n<div class="option" data-sort=".*?">.*?<!-- END_OPTION -->\n', lambda m: options.pop(0), output, flags=re.DOTALL)
     return output
 
 
@@ -161,17 +210,35 @@ class PathOfBuilding:
         result = self._send(f'getBuildInfo()')
         return result
 
-    def test_item_as_html(self, item_text):
+    def import_item(self, item_text, max_quality=False):
+        '''Import an item into the current build's item list without equipping.'''
+        item_text = safe_string(item_text)
+        mq_str = "true" if max_quality else "false"
+        result = self._send(f'importItem("{item_text}", {mq_str})')
+        return result
+
+    def test_item_as_html(self, item_text, max_quality=False):
         '''Run the item through the tester, returning an HTML representation of the effects.'''
         item_text = safe_string(item_text)
-        lines = self._send(f'testItemForDisplay("{item_text}")')
+        mq_str = "true" if max_quality else "false"
+        lines = self._send(f'testItemForDisplay("{item_text}", {mq_str})')
+
+        if not lines:
+            return {"html": "", "unsupported": []}
+
+        unsupported_lines = []
+        for line in lines:
+            if '(Not supported in PoB yet)' in line:
+                clean_line = re.sub(r'\^x[0-9A-Fa-f]{6}|\^[0-9]', '', line)
+                clean_line = clean_line.replace('(Not supported in PoB yet)', '').strip()
+                unsupported_lines.append(clean_line)
 
         # Convert the output to HTML
-        lines = [_pob_line_to_html(line) for line in lines]
-        output = '\n'.join(lines)
+        html_lines = [_pob_line_to_html(line) for line in lines if line]
+        output = '\n'.join(html_lines)
         output = _mark_item_groups(output)
 
-        return HTML_ITEM_HEADER + output
+        return {"html": HTML_ITEM_HEADER + output, "unsupported": unsupported_lines}
 
     # # Not currently possible without evaluating all possible slots
     # def test_item_effect(self, item_text):
