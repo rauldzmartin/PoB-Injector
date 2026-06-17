@@ -13,4 +13,4 @@ call .venv\Scripts\activate
 echo Closing previous processes on port 5000...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do taskkill /F /PID %%a >nul 2>&1
 
-uvicorn app:app --host 127.0.0.1 --port 5000
+start "" .venv\Scripts\pythonw.exe tray.py

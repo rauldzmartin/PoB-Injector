@@ -10,6 +10,10 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
+import ctypes
+if "POB_CONSOLE_TITLE" in os.environ:
+    ctypes.windll.kernel32.SetConsoleTitleW(os.environ["POB_CONSOLE_TITLE"])
+
 POB_INSTALL_ENV = os.getenv("POB_INSTALL")
 
 def _find_pob_install() -> str:
@@ -69,7 +73,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.5p")
+app = FastAPI(title="PoB HTTP API", version="0.6")
 
 @app.on_event("startup")
 async def startup_event():
