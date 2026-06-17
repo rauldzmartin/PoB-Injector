@@ -37,7 +37,19 @@ def main():
     source_root = os.path.join(extract_dir, subdirs[0])
     
     try:
-        subprocess.run(["taskkill", "/F", "/IM", "luajit.exe"], capture_output=True)
+        import subprocess
+        # Kill whatever is listening on port 5000
+        out = subprocess.check_output('netstat -aon | findstr ":5000" | findstr "LISTENING"', shell=True)
+        for line in out.decode().splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 5:
+                pid = parts[-1]
+                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+    except:
+        pass
+
+    try:
+        subprocess.run("taskkill /F /IM luajit.exe", shell=True, capture_output=True)
     except:
         pass
     
