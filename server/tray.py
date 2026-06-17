@@ -12,7 +12,7 @@ log_file = None
 
 import ctypes
 try:
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("PoB.Injector.App")
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("PoB Injector")
 except:
     pass
 
