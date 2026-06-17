@@ -10,6 +10,12 @@ server_process = None
 viewer_process = None
 log_file = None
 
+import ctypes
+try:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("PoB.Injector.App")
+except:
+    pass
+
 def get_python_exe():
     python_exe = sys.executable
     if "pythonw" in python_exe.lower() or "uvicorn" in python_exe.lower():
