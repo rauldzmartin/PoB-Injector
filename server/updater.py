@@ -109,7 +109,7 @@ if __name__ == "__main__":
         root = tk.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        if messagebox.showerror("PoB Injector Updater", f"Hubo un error en la actualización.\n\n{str(e)}\n\n¿Quieres ver los logs detallados?", type=messagebox.YESNO) == messagebox.YES:
+        if messagebox.showerror("PoB Injector Updater", f"There was an error updating.\n\n{str(e)}\n\nDo you want to view the detailed logs?", type=messagebox.YESNO) == messagebox.YES:
             pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
             if not os.path.exists(pythonw_exe):
                 pythonw_exe = sys.executable

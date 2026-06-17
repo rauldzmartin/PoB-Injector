@@ -78,13 +78,13 @@ def trigger_update(icon, item):
             
         if data.get("update_available"):
             latest = data.get("latest_version", "")
-            icon.notify(f"Descargando versión {latest}...", "PoB Injector")
+            icon.notify(f"Downloading version {latest}...", "PoB Injector")
             req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}", method="POST")
             urllib.request.urlopen(req)
         else:
-            icon.notify("Ya tienes la última versión instalada.", "PoB Injector")
+            icon.notify("You already have the latest version installed.", "PoB Injector")
     except Exception as e:
-        icon.notify(f"Error al buscar actualizaciones: {e}", "PoB Injector")
+        icon.notify(f"Error checking for updates: {e}", "PoB Injector")
 
 def quit_app(icon, item):
     icon.stop()
