@@ -43,11 +43,10 @@ def _find_pob_install() -> str:
             return p
 
     # Fallback
-    return POB_INSTALL_ENV if POB_INSTALL_ENV else r"D:\FINAL\Juegos\Path Of Exile\Utilities\Path Of Building Community"
+    return POB_INSTALL_ENV if POB_INSTALL_ENV else ""
 
 POB_INSTALL = _find_pob_install()
 POB_PATH    = os.getenv("POB_PATH", POB_INSTALL)
-HARDCODED_BUILD = os.getenv("HARDCODED_BUILD", os.path.join(POB_INSTALL, r"Builds\0.5\MERC.xml"))
 MOD_RUNES_PATH = os.getenv("MOD_RUNES_PATH", os.path.join(POB_INSTALL, r"Data\ModRunes.lua"))
 MOD_ENCHANTS_PATH = os.getenv("MOD_ENCHANTS_PATH", os.path.join(POB_INSTALL, r"Data\QueryMods.lua"))
 
@@ -70,7 +69,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.3e")
+app = FastAPI(title="PoB HTTP API", version="0.5g")
 
 app.add_middleware(
     CORSMiddleware,
@@ -175,9 +174,6 @@ def _get_active_build() -> str:
         except Exception as e:
             print(f"Error parsing Settings.xml: {e}")
             
-    if os.path.exists(HARDCODED_BUILD):
-        return HARDCODED_BUILD
-        
     builds_dir = os.path.join(POB_INSTALL, "Builds")
     if os.path.exists(builds_dir):
         for root_dir, dirs, files in os.walk(builds_dir):
@@ -185,7 +181,7 @@ def _get_active_build() -> str:
                 if file.lower().endswith(".xml"):
                     return os.path.join(root_dir, file)
                     
-    return HARDCODED_BUILD
+    return ""
 
 _loaded_build_path = None
 _loaded_build_mtime = 0
