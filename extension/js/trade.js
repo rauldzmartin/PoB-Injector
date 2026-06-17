@@ -1095,14 +1095,54 @@
       cfg.useDevBranch = v;
       saveCfg();
     });
+
+    const checkUpdateBtnRow = document.createElement('div');
+    checkUpdateBtnRow.style.cssText = 'display:flex; margin-top: 4px;';
+    const forceUpdateBtn = document.createElement('button');
+    forceUpdateBtn.textContent = 'Check for Updates';
+    forceUpdateBtn.className = 'pob-btn';
+    forceUpdateBtn.style.cssText = 'width: 100%;';
+    
+    forceUpdateBtn.onclick = async () => {
+      const originalText = forceUpdateBtn.textContent;
+      forceUpdateBtn.textContent = 'Checking...';
+      forceUpdateBtn.disabled = true;
+      try {
+        const hasUpdate = await API.checkUpdate();
+        if (hasUpdate) {
+          forceUpdateBtn.textContent = 'Update Available!';
+          forceUpdateBtn.style.borderColor = '#4caf50';
+          forceUpdateBtn.style.color = '#81c784';
+          if (typeof updateBtn !== 'undefined') updateBtn.style.display = 'block';
+          window.top.postMessage({ message: 'show_update_notification' }, '*');
+        } else {
+          forceUpdateBtn.textContent = 'Up to date';
+        }
+      } catch (e) {
+        forceUpdateBtn.textContent = 'Error checking';
+      }
+      setTimeout(() => {
+        forceUpdateBtn.textContent = originalText;
+        forceUpdateBtn.disabled = false;
+        forceUpdateBtn.style.borderColor = '';
+        forceUpdateBtn.style.color = '';
+      }, 3000);
+    };
+    checkUpdateBtnRow.append(forceUpdateBtn);
     
     const settingsInner = document.createElement('div');
     settingsInner.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-top:4px; margin-left:6px; margin-bottom: 12px;';
-    settingsInner.append(devOptIn.row);
+    settingsInner.append(devOptIn.row, checkUpdateBtnRow);
     
     const settingsBlock = makeSection('Updates', null, settingsInner);
     settingsBlock.id = 'pob-settings-block';
-    settingsContent.append(settingsBlock);
+    
+    const versionLbl = document.createElement('div');
+    versionLbl.style.cssText = 'font-size: 10px; color: #5a4d3a; text-align: right; margin-top: 4px; padding-right: 4px;';
+    const manifest = chrome.runtime.getManifest();
+    versionLbl.textContent = 'v' + (manifest.version_name || manifest.version);
+    
+    settingsContent.append(settingsBlock, versionLbl);
     
     content.append(innerContent, settingsContent, offlineOverlay);
     body.append(navbar, content);
