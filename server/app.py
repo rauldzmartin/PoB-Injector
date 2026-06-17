@@ -69,7 +69,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.5m")
+app = FastAPI(title="PoB HTTP API", version="0.5n")
 
 @app.on_event("startup")
 async def startup_event():
@@ -156,7 +156,7 @@ def update(branch: str = "main"):
             
     # Spawn updater in a new console so it survives
     creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    cmd_str = f'cmd.exe /k ""{python_exe}" "{updater_path}" {GITHUB_REPO} {branch}"'
+    cmd_str = f'cmd.exe /c ""{python_exe}" "{updater_path}" {GITHUB_REPO} {branch}"'
     subprocess.Popen(cmd_str, cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
