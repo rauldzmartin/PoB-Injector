@@ -100,7 +100,7 @@ except Exception as e:
 app = FastAPI(
     title="PoB Injector Server",
     description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.19",
+    version="0.6.20",
 )
 
 import logging

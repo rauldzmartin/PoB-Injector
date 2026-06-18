@@ -68,8 +68,8 @@
       }
     },
     async listRunes(slotsCsv = '') {
-      if (!slotsCsv || !slotsCsv.trim()) return []; // no runes for this type
-      const res = await fetch(`${this.base}/runes?slot=${encodeURIComponent(slotsCsv)}`);
+      const qs = slotsCsv && slotsCsv.trim() ? `?slot=${encodeURIComponent(slotsCsv)}` : '';
+      const res = await fetch(`${this.base}/runes${qs}`);
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -121,12 +121,13 @@
   }
   async function ensureRunesFor(slotsCsv) {
     const key = normSlotsCsv(slotsCsv || '');
-    if (!key) { RUNE_CACHE.set('', []); return []; }
     if (RUNE_CACHE.has(key)) return RUNE_CACHE.get(key);
     const list = await API.listRunes(key);
     const out = Array.isArray(list) ? list : Object.values(list || {}).flat();
-    RUNE_CACHE.set(key, out);
-    return out;
+    const uniqueOut = [...new Set(out)];
+    uniqueOut.sort((a,b) => a.localeCompare(b));
+    RUNE_CACHE.set(key, uniqueOut);
+    return uniqueOut;
   }
   function normRuneText(s) { return (s || '').replace(/\s*\(rune\)\s*$/i, '').trim().toLowerCase(); }
   function endsWithRune(s) { return /\(rune\)\s*$/i.test(s); }
