@@ -778,14 +778,10 @@
 
     const typeLbl = document.createElement('div');
     typeLbl.id = 'pob-type-label';
-    typeLbl.className = 'pob-type';
-    typeLbl.style.marginBottom = '8px';
+    typeLbl.className = 'pob-section-title';
     typeLbl.style.display = 'none';
-    typeLbl.style.color = '#a99c82';
-    typeLbl.style.fontSize = '12px';
-    typeLbl.style.textAlign = 'center';
-    typeLbl.style.textTransform = 'uppercase';
-    typeLbl.style.letterSpacing = '1px';
+    typeLbl.style.marginTop = '4px';
+    typeLbl.style.marginBottom = '8px';
     typeLbl.textContent = '';
 
     const buildSelect = document.createElement('select');
