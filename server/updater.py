@@ -114,8 +114,8 @@ def main():
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
         
         print("Restarting server...")
-        run_vbs = os.path.join(repo_root, "start.vbs")
-        subprocess.Popen(["wscript.exe", run_vbs], cwd=repo_root, creationflags=0x08000000)
+        run_vbs = os.path.join(here, "start.vbs")
+        subprocess.Popen(["wscript.exe", run_vbs], cwd=here, creationflags=0x08000000)
     else:
         print("Server unchanged. No restart needed.")
 

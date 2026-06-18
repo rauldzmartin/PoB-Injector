@@ -59,16 +59,11 @@ if not exist "!POB_INSTALL!\Launch.lua" (
 
 
 
-set "WRAPPER_DIR=%~dp0"
-set "WRAPPER_DIR=!WRAPPER_DIR:"=!"
-if "!WRAPPER_DIR:~-1!"=="\" set "WRAPPER_DIR=!WRAPPER_DIR:~0,-1!"
-
-cd /d "%~dp0server"
+cd /d "%~dp0"
 
 echo.
 echo Saving configuration to .env...
 echo POB_INSTALL="!POB_INSTALL!" > .env
-echo USER_POB_WRAPPER="!WRAPPER_DIR!" >> .env
 
 echo.
 echo Installing server dependencies...
