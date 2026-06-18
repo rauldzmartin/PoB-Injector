@@ -173,6 +173,12 @@ class PathOfBuilding:
         print("DEBUG: data_dir =", data_dir)
         print("DEBUG: luajit path =", os.path.join(data_dir, 'luajit.exe'))
         print("DEBUG: cli.lua path =", os.path.join(data_dir, 'cli.lua'))
+        if getattr(sys, 'frozen', False):
+            try:
+                files = [f.name for f in os.scandir(data_dir)]
+                print("DEBUG: files in data_dir =", sorted(files))
+            except Exception as e:
+                print("DEBUG: failed to list data_dir:", e)
         print("DEBUG: cwd =", pob_path)
 
         self.pob = ProcessWrapper(debug=self.verbose)  #  Initialize first

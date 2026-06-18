@@ -63,8 +63,11 @@ class ProcessWrapper:
         return result
 
     def kill(self):
+        if self.process is None:
+            return
         self.process.terminate()
-        self.process.wait()
+        self.process.wait(timeout=5)
+        self.process = None
 
     def get(self):
         line = self.process.stdout.readline()

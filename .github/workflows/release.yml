@@ -32,7 +32,13 @@ jobs:
       - name: Build Executable
         run: |
           python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
-          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
+
+      - name: List Bundled Data (diagnostics)
+        run: |
+          echo "=== Files in server/pob_wrapper/data ==="
+          Get-ChildItem -Recurse server/pob_wrapper/data
+        shell: pwsh
 
       - name: Package Release
         run: |
