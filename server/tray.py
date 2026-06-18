@@ -119,9 +119,9 @@ def create_tray():
     )
     
     menu = pystray.Menu(
-        pystray.MenuItem("Toggle Console", toggle_console, default=True),
+        pystray.MenuItem("Toggle console", toggle_console, default=True),
         pystray.MenuItem("Update", trigger_update),
-        pystray.MenuItem("Update Channel", channel_menu),
+        pystray.MenuItem("Update channel", channel_menu),
         pystray.MenuItem("Quit", quit_app)
     )
     

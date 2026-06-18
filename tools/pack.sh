@@ -2,34 +2,35 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RELEASES_DIR="$ROOT_DIR/releases"
-EXT_DIR="$ROOT_DIR"
+DIST_DIR="$ROOT_DIR/dist"
 
-# Try to find manifest.json within repo
-if [[ -f "$ROOT_DIR/manifest.json" ]]; then
-  EXT_DIR="$ROOT_DIR"
-else
-  # common subfolders
-  for d in extension src app web; do
-    if [[ -f "$ROOT_DIR/$d/manifest.json" ]]; then
-      EXT_DIR="$ROOT_DIR/$d"
-      break
-    fi
-  done
-fi
-
-VERSION=$(grep -oP '"version_name": "\K[^"]+' "$EXT_DIR/manifest.json" || true)
-if [ -z "$VERSION" ]; then
-  VERSION=$(grep -oP '"version": "\K[^"]+' "$EXT_DIR/manifest.json" || true)
-fi
+# Find version
+VERSION=$(grep -oP '"version_name": "\K[^"]+' "$ROOT_DIR/extension/manifest.json" || true)
 if [ -z "$VERSION" ]; then
   VERSION="$(date +%Y%m%d-%H%M%S)"
 fi
 
-mkdir -p "$RELEASES_DIR"
+mkdir -p "$DIST_DIR"
 ZIP_NAME="PoB_Injector_Release_v${VERSION}.zip"
+
+echo "Packing $ZIP_NAME..."
 (
-  cd "$EXT_DIR"
-  zip -r "$RELEASES_DIR/$ZIP_NAME" . -x "*.DS_Store" -x "*.bak" -x "node_modules/*" >/dev/null
+  cd "$ROOT_DIR"
+  zip -r "$DIST_DIR/$ZIP_NAME" . \
+    -x "*.git*" \
+    -x ".github/*" \
+    -x ".vscode/*" \
+    -x ".agents/*" \
+    -x "tools/*" \
+    -x "scratch/*" \
+    -x ".gitignore" \
+    -x "*.env" \
+    -x "dist/*" \
+    -x "server/.venv/*" \
+    -x "server/__pycache__/*" \
+    -x "server/pob_wrapper/__pycache__/*" \
+    -x "server/*.log" \
+    -x "*.DS_Store" \
+    -x "*.bak" >/dev/null
 )
-echo "Wrote $RELEASES_DIR/$ZIP_NAME"
+echo "Wrote $DIST_DIR/$ZIP_NAME"
