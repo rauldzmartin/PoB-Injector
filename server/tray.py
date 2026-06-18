@@ -110,9 +110,9 @@ def trigger_update(icon, item):
             data = json.loads(response.read().decode())
             
         if data.get("update_available"):
-            latest = data.get("latest_version", "")
+            latest = data.get("remote_version", "")
             icon.notify(f"Downloading version {latest}...", "PoB Injector")
-            req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}", method="POST")
+            req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}&version={latest}", method="POST")
             urllib.request.urlopen(req)
         else:
             icon.notify("You already have the latest version installed.", "PoB Injector")
@@ -139,6 +139,14 @@ def create_tray():
     
     icon = pystray.Icon("PoB Injector", image, "PoB Injector Server", menu)
     
+    # Check for update notification
+    if "--updated" in sys.argv:
+        def show_update_notif():
+            import time
+            time.sleep(2)
+            icon.notify("PoB Injector updated successfully to the latest version!", "Update Complete")
+        threading.Thread(target=show_update_notif, daemon=True).start()
+        
     threading.Thread(target=monitor_server, args=(icon,), daemon=True).start()
     icon.run()
 

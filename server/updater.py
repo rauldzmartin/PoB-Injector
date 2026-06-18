@@ -3,15 +3,22 @@ import sys, os, time, urllib.request, zipfile, shutil, subprocess
 def main():
     repo = sys.argv[1] if len(sys.argv) > 1 else "rauldzmartin/PoB-Injector"
     branch = sys.argv[2] if len(sys.argv) > 2 else "main"
+    version = sys.argv[3] if len(sys.argv) > 3 else ""
     here = os.path.abspath(os.path.dirname(__file__))
     repo_root = os.path.abspath(os.path.join(here, ".."))
     
     print("Waiting for server to shut down...")
     time.sleep(3)
     
-    # Append timestamp to bypass GitHub's aggressive zip cache (5 minutes)
-    timestamp = int(time.time())
-    zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip?t={timestamp}"
+    is_compiled = getattr(sys, 'frozen', False) or sys.executable.endswith("PoB-Injector.exe")
+    
+    # Use Release .zip if compiled and we have a version, otherwise source branch
+    if is_compiled and version:
+        zip_url = f"https://github.com/{repo}/releases/download/v{version}/PoB_Injector_Release_v{version}.zip"
+    else:
+        timestamp = int(time.time())
+        zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip?t={timestamp}"
+        
     zip_path = os.path.join(here, "update.zip")
     
     print(f"Downloading update from {zip_url}...")
@@ -36,7 +43,13 @@ def main():
     subdirs = os.listdir(extract_dir)
     if not subdirs:
         return
-    source_root = os.path.join(extract_dir, subdirs[0])
+        
+    if is_compiled and version:
+        source_root = os.path.join(extract_dir, "PoB-Injector")
+        if not os.path.exists(source_root):
+            source_root = extract_dir # Fallback if folder isn't nested
+    else:
+        source_root = os.path.join(extract_dir, subdirs[0])
     
     # Check if server changed
     server_changed = False
@@ -79,7 +92,7 @@ def main():
         except:
             pass
     
-    if getattr(sys, 'frozen', False):
+    if is_compiled:
         print("Running as executable. Preparing batch update script...")
         exe_path = sys.executable
         new_exe = os.path.join(source_root, os.path.basename(exe_path))
@@ -96,7 +109,7 @@ def main():
             f.write(f'if exist "{source_ext}" xcopy /Y /E /I "{source_ext}" "{target_ext}"\n')
             f.write(f'rmdir /s /q "{extract_dir}"\n')
             f.write(f'del "{zip_path}"\n')
-            f.write(f'start "" "{exe_path}"\n')
+            f.write(f'start "" "{exe_path}" --updated\n')
             f.write('del "%~f0"\n')
             
         subprocess.Popen([bat_path], cwd=repo_root, creationflags=0x08000000)

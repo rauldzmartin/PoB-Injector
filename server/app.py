@@ -100,7 +100,7 @@ except Exception as e:
 app = FastAPI(
     title="PoB Injector Server",
     description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.10",
+    version="0.6.11",
 )
 
 import logging
@@ -218,7 +218,7 @@ def check_update(branch: str = "main"):
         return {"update_available": False, "error": str(e)}
 
 @app.post("/update")
-def update(branch: str = "main"):
+def update(branch: str = "main", version: str = ""):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
     
@@ -230,7 +230,7 @@ def update(branch: str = "main"):
             
     # Spawn updater in a new console so it survives
     CREATE_NO_WINDOW = 0x08000000
-    subprocess.Popen([python_exe, updater_path, "rauldzmartin/PoB-Injector", branch], 
+    subprocess.Popen([python_exe, updater_path, "rauldzmartin/PoB-Injector", branch, version], 
                      cwd=HERE, 
                      creationflags=CREATE_NO_WINDOW,
                      stdin=subprocess.DEVNULL,
