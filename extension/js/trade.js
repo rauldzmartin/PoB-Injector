@@ -751,6 +751,7 @@
           }
           await API.loadPoB(cfg.activeBuild || null);
           injectCode();
+          if (typeof loadEnchantsToUI === 'function') loadEnchantsToUI();
           await checkUpdateVisibility();
         } catch (e) {
           console.error(e);
@@ -791,7 +792,7 @@
     let isReloadingBuild = false;
     const reloadActiveBuild = async () => {
       if (isReloadingBuild) return;
-      if (buildSelect.value === cfg.activeBuild) {
+      if (buildSelect.value === cfg.activeBuild || (!cfg.activeBuild && buildSelect.value === buildSelect.options[0]?.value)) {
         isDropdownOpen = false;
         return;
       }
@@ -1075,6 +1076,7 @@
         for (const m of list) { 
           const o = document.createElement('option'); 
           o.value = m.text.replace(/^Allocates\s+/i, ''); 
+          o.textContent = o.value;
           enchDatalist.append(o); 
         }
       } catch (e) {}
@@ -1244,18 +1246,21 @@
         }
         window.lastPobItemTypeLabel = typeLabel;
 
-        try {
-          currentRuneList = await ensureRunesFor(runeslots);
-          const dl = document.getElementById('pob-runes-list');
-          if (dl) {
-            dl.innerHTML = '';
-            for (const m of currentRuneList) {
-              const o = document.createElement('option'); o.value = m; o.textContent = m;
-              dl.append(o);
+        if (cfg.lastSlotsCsv !== runeslots || !document.getElementById('pob-runes-list')?.children.length) {
+          cfg.lastSlotsCsv = runeslots;
+          try {
+            currentRuneList = await ensureRunesFor(runeslots);
+            const dl = document.getElementById('pob-runes-list');
+            if (dl) {
+              dl.innerHTML = '';
+              for (const m of currentRuneList) {
+                const o = document.createElement('option'); o.value = m; o.textContent = m;
+                dl.append(o);
+              }
             }
+          } catch {
+            currentRuneList = [];
           }
-        } catch {
-          currentRuneList = [];
         }
 
         let itemTextAfter = e.data.item;
