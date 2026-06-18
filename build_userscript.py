@@ -41,7 +41,7 @@ def main():
     # Replace chrome.runtime calls in trade.js to make it Tampermonkey compatible
     js_content = js_content.replace(
         "script.src = chrome.runtime.getURL('js/trade-injected.js');",
-        "script.textContent = `" + injected_js_content.replace("`", "\\`").replace("${", "\\${") + "`;"
+        "script.textContent = " + json.dumps(injected_js_content) + ";"
     )
     js_content = js_content.replace("chrome.runtime.getURL('img/icon.png')", f"'{icon_b64}'")
     js_content = js_content.replace("chrome.runtime.getManifest()", f"({{ version: '{version}' }})")
@@ -60,7 +60,7 @@ def main():
     }
     """
 
-    repo_url = "https://raw.githubusercontent.com/rauldzmartin/PoB-Injector/main/pob-injector.user.js"
+    repo_url = "https://github.com/rauldzmartin/PoB-Injector/releases/latest/download/pob-injector.user.js"
 
     userscript = f"""// ==UserScript==
 // @name         PoB Injector

@@ -765,7 +765,13 @@
     typeLbl.id = 'pob-type-label';
     typeLbl.className = 'pob-type';
     typeLbl.style.marginBottom = '8px';
-    typeLbl.textContent = '\u2014';
+    typeLbl.style.display = 'none';
+    typeLbl.style.color = '#a99c82';
+    typeLbl.style.fontSize = '12px';
+    typeLbl.style.textAlign = 'center';
+    typeLbl.style.textTransform = 'uppercase';
+    typeLbl.style.letterSpacing = '1px';
+    typeLbl.textContent = '';
 
     const buildSelect = document.createElement('select');
     buildSelect.title = 'Select active build';
@@ -1177,7 +1183,10 @@
         updateSectionVisibility();
 
         const t = document.getElementById('pob-type-label');
-        if (t) t.textContent = 'Current item type: ' + typeLabel;
+        if (t) {
+          t.textContent = 'Settings for: ' + typeLabel;
+          t.style.display = 'block';
+        }
 
         if (cfg.activeItemTypeLabel !== typeLabel) {
           if (!cfg.savedRunes) cfg.savedRunes = {};
