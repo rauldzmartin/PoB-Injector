@@ -41,12 +41,12 @@ jobs:
           if (-not $VERSION) { $VERSION = $MANIFEST.version }
           $ZIP_NAME = "PoB_Injector_Release_v$VERSION.zip"
           
-          New-Item -ItemType Directory -Force -Path dist_temp
-          Copy-Item dist\PoB-Injector.exe -Destination dist_temp\
-          Copy-Item extension -Destination dist_temp\extension -Recurse
-          Copy-Item README.md -Destination dist_temp\
+          New-Item -ItemType Directory -Force -Path dist_temp\PoB-Injector
+          Copy-Item dist\PoB-Injector.exe -Destination dist_temp\PoB-Injector\
+          Copy-Item extension -Destination dist_temp\PoB-Injector\extension -Recurse
+          Copy-Item README.md -Destination dist_temp\PoB-Injector\
           
-          Compress-Archive -Path dist_temp\* -DestinationPath dist\$ZIP_NAME
+          Compress-Archive -Path dist_temp\PoB-Injector -DestinationPath dist\$ZIP_NAME
         shell: powershell
 
       - name: Upload zip as artifact
