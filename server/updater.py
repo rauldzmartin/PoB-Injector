@@ -38,22 +38,46 @@ def main():
         return
     source_root = os.path.join(extract_dir, subdirs[0])
     
-    try:
-        import subprocess
-        # Kill whatever is listening on port 5000
-        out = subprocess.check_output('netstat -aon | findstr ":5000" | findstr "LISTENING"', shell=True, creationflags=0x08000000)
-        for line in out.decode().splitlines():
-            parts = line.strip().split()
-            if len(parts) >= 5:
-                pid = parts[-1]
-                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True, creationflags=0x08000000)
-    except:
-        pass
+    # Check if server changed
+    server_changed = False
+    source_server = os.path.join(source_root, "server")
+    target_server = os.path.join(repo_root, "server")
+    if os.path.exists(source_server):
+        if not os.path.exists(target_server):
+            server_changed = True
+        else:
+            for root, _, files in os.walk(source_server):
+                if server_changed: break
+                rel_root = os.path.relpath(root, source_server)
+                dst_root = os.path.join(target_server, rel_root)
+                for f in files:
+                    src_f = os.path.join(root, f)
+                    dst_f = os.path.join(dst_root, f)
+                    if not os.path.exists(dst_f):
+                        server_changed = True
+                        break
+                    with open(src_f, "rb") as f1, open(dst_f, "rb") as f2:
+                        if f1.read() != f2.read():
+                            server_changed = True
+                            break
+    
+    if server_changed:
+        try:
+            import subprocess
+            # Kill whatever is listening on port 5000
+            out = subprocess.check_output('netstat -aon | findstr ":5000" | findstr "LISTENING"', shell=True, creationflags=0x08000000)
+            for line in out.decode().splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5:
+                    pid = parts[-1]
+                    subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True, creationflags=0x08000000)
+        except:
+            pass
 
-    try:
-        subprocess.run("taskkill /F /IM luajit.exe", shell=True, capture_output=True, creationflags=0x08000000)
-    except:
-        pass
+        try:
+            subprocess.run("taskkill /F /IM luajit.exe", shell=True, capture_output=True, creationflags=0x08000000)
+        except:
+            pass
     
     print("Replacing files...")
     for item in os.listdir(source_root):
@@ -85,12 +109,15 @@ def main():
     except:
         pass
     
-    print("Installing dependencies...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
-    
-    print("Restarting server...")
-    run_vbs = os.path.join(repo_root, "start.vbs")
-    subprocess.Popen(["wscript.exe", run_vbs], cwd=repo_root, creationflags=0x08000000)
+    if server_changed:
+        print("Installing dependencies...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
+        
+        print("Restarting server...")
+        run_vbs = os.path.join(repo_root, "start.vbs")
+        subprocess.Popen(["wscript.exe", run_vbs], cwd=repo_root, creationflags=0x08000000)
+    else:
+        print("Server unchanged. No restart needed.")
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
