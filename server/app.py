@@ -100,7 +100,7 @@ except Exception as e:
 app = FastAPI(
     title="PoB Injector Server",
     description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.9",
+    version="0.6.10",
 )
 
 import logging
@@ -246,36 +246,41 @@ def update(branch: str = "main"):
     return {"status": "updating"}
 
 def _get_active_build() -> str:
-    settings_path = os.path.join(POB_INSTALL, "Settings.xml")
-    if os.path.exists(settings_path):
-        try:
-            import xml.etree.ElementTree as ET
-            tree = ET.parse(settings_path)
-            root = tree.getroot()
-            mode = root.find("./Mode[@mode='BUILD']")
-            if mode is not None:
-                for arg in mode.findall("./Arg"):
-                    if 'string' in arg.attrib:
-                        build_path = arg.attrib['string']
-                        if not os.path.isabs(build_path):
-                            # Try to get the actual builds dir from Lua
-                            try:
-                                pob = _ensure_pob()
-                                b_dir = pob.get_builds_dir()
-                                if b_dir and not os.path.isabs(b_dir):
-                                    b_dir = os.path.join(POB_INSTALL, b_dir)
-                                build_path = os.path.join(b_dir, build_path)
-                            except Exception:
-                                build_path = os.path.join(POB_INSTALL, "Builds", build_path)
-                        if not build_path.endswith(".xml"):
-                            build_path += ".xml"
-                        if os.path.exists(build_path):
-                            return build_path
-        except Exception as e:
-            print(f"Error parsing Settings.xml: {e}")
-            
-    builds_dir = os.path.join(POB_INSTALL, "Builds")
-    if os.path.exists(builds_dir):
+    possible_settings_paths = [os.path.join(POB_INSTALL, "Settings.xml")]
+    builds_dir = ""
+    
+    try:
+        pob = _ensure_pob()
+        b_dir = pob.get_builds_dir()
+        if b_dir and not os.path.isabs(b_dir):
+            b_dir = os.path.normpath(os.path.join(POB_INSTALL, b_dir))
+        builds_dir = b_dir
+        if builds_dir:
+            possible_settings_paths.insert(0, os.path.join(os.path.dirname(builds_dir), "Settings.xml"))
+    except Exception:
+        builds_dir = os.path.join(POB_INSTALL, "Builds")
+        
+    for settings_path in possible_settings_paths:
+        if os.path.exists(settings_path):
+            try:
+                import xml.etree.ElementTree as ET
+                tree = ET.parse(settings_path)
+                root = tree.getroot()
+                mode = root.find("./Mode[@mode='BUILD']")
+                if mode is not None:
+                    for arg in mode.findall("./Arg"):
+                        if 'string' in arg.attrib:
+                            build_path = arg.attrib['string']
+                            if not os.path.isabs(build_path):
+                                build_path = os.path.join(builds_dir, build_path)
+                            if not build_path.endswith(".xml"):
+                                build_path += ".xml"
+                            if os.path.exists(build_path):
+                                return build_path
+            except Exception as e:
+                print(f"Error parsing Settings.xml at {settings_path}: {e}")
+
+    if builds_dir and os.path.exists(builds_dir):
         for root_dir, dirs, files in os.walk(builds_dir):
             for file in files:
                 if file.lower().endswith(".xml"):
