@@ -67,7 +67,7 @@ def main():
 // @namespace    http://tampermonkey.net/
 // @version      {version}
 // @description  Inline PoB impact for trade/trade2 via local FastAPI HTTP server
-// @author       Raul DZ Martin
+// @author       rauldzmartin@gmail.com
 // @match        *://*.pathofexile.com/trade*
 // @grant        none
 // @updateURL    {repo_url}

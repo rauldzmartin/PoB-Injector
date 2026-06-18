@@ -100,7 +100,7 @@ except Exception as e:
 app = FastAPI(
     title="PoB Injector Server",
     description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.18",
+    version="0.6.19",
 )
 
 import logging
@@ -195,25 +195,32 @@ GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 def check_update(branch: str = "main"):
     try:
         import urllib.request, json, time
-        timestamp = int(time.time())
-        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json?t={timestamp}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            if resp.status == 200:
-                remote_manifest = json.loads(resp.read().decode('utf-8'))
-                remote_version = remote_manifest.get("version_name", "")
-                
-                local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
-                local_version = ""
-                if os.path.exists(local_manifest_path):
-                    with open(local_manifest_path, "r", encoding="utf-8") as f:
-                        local_manifest = json.load(f)
-                        local_version = local_manifest.get("version_name", "")
-                        
-                if remote_version and local_version and remote_version != local_version:
-                    return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
-                return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
-            return {"update_available": False, "error": f"HTTP {resp.status}"}
+        
+        local_version = app.version
+        
+        if getattr(sys, 'frozen', False):
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest?t={int(time.time())}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    release_data = json.loads(resp.read().decode('utf-8'))
+                    remote_version = release_data.get("tag_name", "").lstrip("v")
+                    if remote_version and local_version and remote_version != local_version:
+                        return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
+                    return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
+        else:
+            timestamp = int(time.time())
+            url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json?t={timestamp}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    remote_manifest = json.loads(resp.read().decode('utf-8'))
+                    remote_version = remote_manifest.get("version_name", "")
+                    
+                    if remote_version and local_version and remote_version != local_version:
+                        return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
+                    return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
+        return {"update_available": False, "error": "Could not check update"}
     except Exception as e:
         return {"update_available": False, "error": str(e)}
 
@@ -221,6 +228,10 @@ def check_update(branch: str = "main"):
 def update(branch: str = "main", version: str = ""):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
+    
+    if getattr(sys, 'frozen', False) and not version:
+        res = check_update(branch)
+        version = res.get("remote_version", "")
     
     python_exe = sys.executable
     if "uvicorn" in python_exe.lower():
