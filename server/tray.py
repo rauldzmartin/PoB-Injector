@@ -40,11 +40,26 @@ def start_server():
         stderr=subprocess.STDOUT
     )
 
+def cleanup_and_exit(icon=None):
+    if icon:
+        icon.stop()
+    if viewer_process and viewer_process.poll() is None:
+        viewer_process.kill()
+    if server_process and server_process.poll() is None:
+        server_process.kill()
+    if log_file:
+        try:
+            log_file.close()
+        except:
+            pass
+    os._exit(0)
+
 def monitor_server(icon):
+    time.sleep(1)
+    icon.notify("Servidor iniciado correctamente.", "PoB Injector")
     if server_process:
         server_process.wait()
-    icon.stop()
-    os._exit(0)
+    cleanup_and_exit(icon)
 
 def toggle_console(icon, item):
     global viewer_process
@@ -93,17 +108,7 @@ def trigger_update(icon, item):
         icon.notify(f"Error checking for updates: {e}", "PoB Injector")
 
 def quit_app(icon, item):
-    icon.stop()
-    if viewer_process and viewer_process.poll() is None:
-        viewer_process.kill()
-    if server_process:
-        server_process.kill()
-    if log_file:
-        try:
-            log_file.close()
-        except:
-            pass
-    os._exit(0)
+    cleanup_and_exit(icon)
 
 def create_tray():
     image = Image.open(ICON_PATH)
@@ -114,7 +119,7 @@ def create_tray():
     )
     
     menu = pystray.Menu(
-        pystray.MenuItem("Toggle Console", toggle_console),
+        pystray.MenuItem("Toggle Console", toggle_console, default=True),
         pystray.MenuItem("Update", trigger_update),
         pystray.MenuItem("Update Channel", channel_menu),
         pystray.MenuItem("Quit", quit_app)
