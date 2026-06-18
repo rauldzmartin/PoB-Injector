@@ -926,10 +926,14 @@
     refreshBtn.className = 'pob-icon-btn'; refreshBtn.innerHTML = '\u21bb'; refreshBtn.title = 'Reload runes for current item type';
     refreshBtn.onclick = async () => {
       refreshBtn.disabled = true;
+      runeDatalist.innerHTML = '<option disabled>Loading\u2026</option>';
       try {
         currentRuneList = await ensureRunesFor(cfg.lastSlotsCsv || '');
         runeDatalist.innerHTML = '';
         for (const m of currentRuneList) { const o = document.createElement('option'); o.value = m; runeDatalist.append(o); }
+      } catch {
+        currentRuneList = [];
+        runeDatalist.innerHTML = '<option disabled style="color:#c66">\u26a0 Server unreachable</option>';
       } finally { refreshBtn.disabled = false; }
     };
 
@@ -1186,7 +1190,6 @@
         const maxSockets = Number(e.data.maxSockets || 0) || 0;
         const runeslots = (e.data.runeSlots || '');
         const typeLabel = e.data.itemTypeLabel || (runeslots || '—');
-        cfg.lastSlotsCsv = runeslots;
 
         // Update section visibility based on item capabilities
         currentItemHasSockets = maxSockets > 0;
@@ -1248,9 +1251,10 @@
 
         if (cfg.lastSlotsCsv !== runeslots || !document.getElementById('pob-runes-list')?.children.length) {
           cfg.lastSlotsCsv = runeslots;
+          const dl = document.getElementById('pob-runes-list');
+          if (dl) dl.innerHTML = '<option disabled>Loading\u2026</option>';
           try {
             currentRuneList = await ensureRunesFor(runeslots);
-            const dl = document.getElementById('pob-runes-list');
             if (dl) {
               dl.innerHTML = '';
               for (const m of currentRuneList) {
@@ -1260,6 +1264,7 @@
             }
           } catch {
             currentRuneList = [];
+            if (dl) dl.innerHTML = '<option disabled style="color:#c66">\u26a0 Server unreachable</option>';
           }
         }
 
