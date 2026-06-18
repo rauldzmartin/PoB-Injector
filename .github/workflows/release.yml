@@ -49,11 +49,16 @@ jobs:
           Compress-Archive -Path dist_temp\PoB-Injector -DestinationPath dist\$ZIP_NAME
         shell: powershell
 
-      - name: Upload zip as artifact
+      - name: Build UserScript
+        run: python build_userscript.py
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: extension-zip
-          path: dist/*.zip
+          name: release-files
+          path: |
+            dist/*.zip
+            pob-injector.user.js
 
   create-release:
     needs: build-release
@@ -65,12 +70,14 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: extension-zip
+          name: release-files
           path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/pob-injector.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

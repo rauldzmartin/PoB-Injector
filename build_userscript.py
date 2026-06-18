@@ -1,0 +1,57 @@
+import os
+import json
+
+def main():
+    here = os.path.abspath(os.path.dirname(__file__))
+    ext_dir = os.path.join(here, "extension")
+    manifest_path = os.path.join(ext_dir, "manifest.json")
+    
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+        
+    version = manifest.get("version", "1.0.0")
+    
+    css_path = os.path.join(ext_dir, "css", "content.css")
+    with open(css_path, "r", encoding="utf-8") as f:
+        css_content = f.read().replace("`", "\\`") # Escape backticks for JS template string
+        
+    js_path = os.path.join(ext_dir, "js", "trade.js")
+    with open(js_path, "r", encoding="utf-8") as f:
+        js_content = f.read()
+
+    # The repo URL for automatic updates
+    repo_url = "https://raw.githubusercontent.com/rauldzmartin/PoB-Injector/main/pob-injector.user.js"
+
+    userscript = f"""// ==UserScript==
+// @name         PoB Injector
+// @namespace    http://tampermonkey.net/
+// @version      {version}
+// @description  Inline PoB impact for trade/trade2 via local FastAPI HTTP server
+// @author       Raul DZ Martin
+// @match        *://*.pathofexile.com/trade2/*
+// @grant        none
+// @updateURL    {repo_url}
+// @downloadURL  {repo_url}
+// ==/UserScript==
+
+(function() {{
+    'use strict';
+
+    // Inject CSS
+    const style = document.createElement('style');
+    style.textContent = `{css_content}`;
+    document.head.appendChild(style);
+
+    // Inject Main JS
+{js_content}
+}})();
+"""
+
+    out_path = os.path.join(here, "pob-injector.user.js")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(userscript)
+        
+    print(f"UserScript built successfully: pob-injector.user.js (v{version})")
+
+if __name__ == "__main__":
+    main()
