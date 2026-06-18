@@ -16,24 +16,27 @@ def tail_file(filename, text_widget):
             text_widget.insert(tk.END, line)
             text_widget.see(tk.END)
 
-root = tk.Tk()
-root.title("PoB Injector - Server Logs")
-root.geometry("800x500")
-root.configure(bg="#1e1e1e")
+def main(target_log="server.log"):
+    root = tk.Tk()
+    root.title("PoB Injector - Server Logs")
+    root.geometry("800x500")
+    root.configure(bg="#1e1e1e")
 
-text = tk.Text(root, bg="#1e1e1e", fg="#d4d4d4", font=("Consolas", 10), borderwidth=0, highlightthickness=0)
-text.pack(expand=True, fill="both", padx=10, pady=10)
+    text = tk.Text(root, bg="#1e1e1e", fg="#d4d4d4", font=("Consolas", 10), borderwidth=0, highlightthickness=0)
+    text.pack(expand=True, fill="both", padx=10, pady=10)
 
-import sys
-target_log = "server.log"
-if len(sys.argv) > 1:
-    target_log = sys.argv[1]
+    log_path = target_log if os.path.isabs(target_log) else os.path.join(os.path.dirname(__file__), target_log)
+    if not os.path.exists(log_path):
+        open(log_path, 'w').close()
 
-log_path = os.path.join(os.path.dirname(__file__), target_log)
-if not os.path.exists(log_path):
-    open(log_path, 'w').close()
+    t = threading.Thread(target=tail_file, args=(log_path, text), daemon=True)
+    t.start()
 
-t = threading.Thread(target=tail_file, args=(log_path, text), daemon=True)
-t.start()
+    root.mainloop()
 
-root.mainloop()
+if __name__ == "__main__":
+    import sys
+    target = "server.log"
+    if len(sys.argv) > 1:
+        target = sys.argv[1]
+    main(target)

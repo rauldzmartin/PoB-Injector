@@ -15,6 +15,9 @@ pnpm-lock.yaml
 # Build outputs
 releases/
 *.zip
+build/
+dist/
+*.ico
 
 # Misc
 *.bak

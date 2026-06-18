@@ -63,7 +63,7 @@ def cleanup_and_exit(icon=None):
 
 def monitor_server(icon):
     time.sleep(1)
-    icon.notify("Servidor iniciado correctamente.", "PoB Injector")
+    icon.notify("Server started successfully.", "PoB Injector")
     # In PyInstaller mode, Uvicorn runs in a thread. 
     # If the user wants to close the app, they use the tray menu.
     # We no longer wait for a separate process to die.
@@ -80,7 +80,11 @@ def toggle_console(icon, item):
         viewer_process.terminate()
         viewer_process = None
     else:
-        viewer_process = multiprocessing.Process(target=run_viewer, args=("server.log",))
+        if getattr(sys, 'frozen', False):
+            log_path = os.path.join(os.path.dirname(sys.executable), "PoB-Injector.log")
+        else:
+            log_path = os.path.join(HERE, "PoB-Injector.log")
+        viewer_process = multiprocessing.Process(target=run_viewer, args=(log_path,))
         viewer_process.start()
 
 current_channel = "dev"

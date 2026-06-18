@@ -41,30 +41,28 @@ A tool to seamlessly evaluate Path of Exile 2 items directly from your browser i
 
 ## Prerequisites
 
-- **Python 3.x**: If you don't have it, the installer (`server/install.bat`) will automatically download and set up Python 3.13 for you.
 - **Path of Building Community (PoB)**: Installed on your system.
+*(No Python installation required!)*
 
 ## 1. Local Server Setup
 
-1. Run `server/install.bat` located in the server directory.
-2. The script will automatically detect or ask for your Path of Building installation directory.
+1. Extract the downloaded `PoB_Injector_Release_vX.X.X.zip` anywhere on your PC.
+2. Run `PoB-Injector.exe`.
+3. If it cannot automatically detect your Path of Building installation, a popup will ask you to select the folder where PoB is installed.
 
 *Note: The server automatically detects your currently active PoB build profile from `Settings.xml`.*
-
-4. The script will set up a virtual environment (`.venv`) and install all required dependencies.
-5. At the end of the script, you can choose to start the server immediately. To start it later, run `server/start.bat`.
 
 ## 2. Extension Installation (Chrome / Brave)
 
 1. Open your browser and navigate to `chrome://extensions/` (Chrome) or `brave://extensions/` (Brave).
 2. Enable **Developer mode** in the top right corner.
 3. Click on **Load unpacked**.
-4. Select the `extension` folder located in the root directory of this project.
+4. Select the `extension` folder located next to `PoB-Injector.exe`.
 5. The extension will be installed and enabled.
 
 ## Usage
 
-1. Run `server/start.bat` to start the local server.
+1. Ensure `PoB-Injector.exe` is running in your system tray (bottom right corner).
 2. Browse items on trade site [https://www.pathofexile.com/trade2/](https://www.pathofexile.com/trade2/).
 3. The extension will automatically compare the items in the market with your items equipped in your active Path of Building build.
 

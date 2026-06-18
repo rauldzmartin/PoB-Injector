@@ -9,16 +9,42 @@ permissions:
   contents: write
 
 jobs:
-  build-zip:
-    runs-on: ubuntu-latest
+  build-release:
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make zip
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
         run: |
-          bash tools/pack.sh
-        shell: bash
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build Executable
+        run: |
+          python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
+
+      - name: Package Release
+        run: |
+          $MANIFEST = Get-Content extension\manifest.json | ConvertFrom-Json
+          $VERSION = $MANIFEST.version_name
+          if (-not $VERSION) { $VERSION = $MANIFEST.version }
+          $ZIP_NAME = "PoB_Injector_Release_v$VERSION.zip"
+          
+          New-Item -ItemType Directory -Force -Path dist_temp
+          Copy-Item dist\PoB-Injector.exe -Destination dist_temp\
+          Copy-Item extension -Destination dist_temp\extension -Recurse
+          Copy-Item README.md -Destination dist_temp\
+          
+          Compress-Archive -Path dist_temp\* -DestinationPath dist\$ZIP_NAME
+        shell: powershell
 
       - name: Upload zip as artifact
         uses: actions/upload-artifact@v4
@@ -27,7 +53,7 @@ jobs:
           path: dist/*.zip
 
   create-release:
-    needs: build-zip
+    needs: build-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

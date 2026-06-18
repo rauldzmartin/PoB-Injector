@@ -79,45 +79,68 @@ def main():
         except:
             pass
     
-    print("Replacing files...")
-    for item in os.listdir(source_root):
-        s = os.path.join(source_root, item)
-        d = os.path.join(repo_root, item)
+    if getattr(sys, 'frozen', False):
+        print("Running as executable. Preparing batch update script...")
+        exe_path = sys.executable
+        new_exe = os.path.join(source_root, os.path.basename(exe_path))
         
-        # Don't overwrite .git folder or scratch
-        if item in [".git", "scratch"]:
-            continue
-            
-        if item == "server" and os.path.isdir(d):
-            # Merge server folder without deleting .env and .venv
-            for sub_item in os.listdir(s):
-                s_sub = os.path.join(s, sub_item)
-                d_sub = os.path.join(d, sub_item)
-                if os.path.isdir(s_sub):
-                    shutil.copytree(s_sub, d_sub, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(s_sub, d_sub)
-        elif os.path.isdir(s):
-            shutil.copytree(s, d, dirs_exist_ok=True)
-        else:
-            shutil.copy2(s, d)
-            
-    print("Cleaning up...")
-    try:
-        os.remove(zip_path)
-        shutil.rmtree(extract_dir)
-    except:
-        pass
-    
-    if server_changed:
-        print("Installing dependencies...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
+        # We must also copy the extension folder
+        source_ext = os.path.join(source_root, "extension")
+        target_ext = os.path.join(repo_root, "extension")
         
-        print("Restarting server...")
-        run_vbs = os.path.join(here, "start.vbs")
-        subprocess.Popen(["wscript.exe", run_vbs], cwd=here, creationflags=0x08000000)
+        bat_path = os.path.join(repo_root, "update.bat")
+        with open(bat_path, "w") as f:
+            f.write("@echo off\n")
+            f.write("timeout /t 3 /nobreak >nul\n")
+            f.write(f'if exist "{new_exe}" copy /Y "{new_exe}" "{exe_path}"\n')
+            f.write(f'if exist "{source_ext}" xcopy /Y /E /I "{source_ext}" "{target_ext}"\n')
+            f.write(f'rmdir /s /q "{extract_dir}"\n')
+            f.write(f'del "{zip_path}"\n')
+            f.write(f'start "" "{exe_path}"\n')
+            f.write('del "%~f0"\n')
+            
+        subprocess.Popen([bat_path], cwd=repo_root, creationflags=0x08000000)
+        os._exit(0)
     else:
-        print("Server unchanged. No restart needed.")
+        print("Replacing files...")
+        for item in os.listdir(source_root):
+            s = os.path.join(source_root, item)
+            d = os.path.join(repo_root, item)
+            
+            # Don't overwrite .git folder or scratch
+            if item in [".git", "scratch"]:
+                continue
+                
+            if item == "server" and os.path.isdir(d):
+                # Merge server folder without deleting .env and .venv
+                for sub_item in os.listdir(s):
+                    s_sub = os.path.join(s, sub_item)
+                    d_sub = os.path.join(d, sub_item)
+                    if os.path.isdir(s_sub):
+                        shutil.copytree(s_sub, d_sub, dirs_exist_ok=True)
+                    else:
+                        shutil.copy2(s_sub, d_sub)
+            elif os.path.isdir(s):
+                shutil.copytree(s, d, dirs_exist_ok=True)
+            else:
+                shutil.copy2(s, d)
+                
+        print("Cleaning up...")
+        try:
+            os.remove(zip_path)
+            shutil.rmtree(extract_dir)
+        except:
+            pass
+        
+        if server_changed:
+            print("Installing dependencies...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", os.path.join(here, "requirements.txt")], creationflags=0x08000000)
+            
+            print("Restarting server...")
+            run_vbs = os.path.join(here, "start.vbs")
+            subprocess.Popen(["wscript.exe", run_vbs], cwd=here, creationflags=0x08000000)
+        else:
+            print("Server unchanged. No restart needed.")
 
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))

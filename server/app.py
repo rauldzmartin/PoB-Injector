@@ -97,7 +97,11 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.8")
+app = FastAPI(
+    title="PoB Injector Server",
+    description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
+    version="0.6.9",
+)
 
 import logging
 
@@ -126,6 +130,16 @@ async def startup_event():
     print(f"\n======================================")
     print(f"  PoB Injector Server v{app.version}")
     print(f"======================================\n")
+    logger = logging.getLogger("uvicorn")
+    logger.info(f"PoB Installation path: {POB_INSTALL}")
+    try:
+        pob = _ensure_pob()
+        builds_path = pob.get_builds_dir()
+        if builds_path and not os.path.isabs(builds_path):
+            builds_path = os.path.join(POB_INSTALL, builds_path)
+        logger.info(f"PoB Builds path: {os.path.normpath(builds_path)}")
+    except Exception as e:
+        logger.info(f"PoB Builds path: (Unable to determine: {e})")
 
 app.add_middleware(
     CORSMiddleware,
@@ -244,9 +258,17 @@ def _get_active_build() -> str:
                     if 'string' in arg.attrib:
                         build_path = arg.attrib['string']
                         if not os.path.isabs(build_path):
-                            build_path = os.path.join(POB_INSTALL, "Builds", build_path)
-                            if not build_path.endswith(".xml"):
-                                build_path += ".xml"
+                            # Try to get the actual builds dir from Lua
+                            try:
+                                pob = _ensure_pob()
+                                b_dir = pob.get_builds_dir()
+                                if b_dir and not os.path.isabs(b_dir):
+                                    b_dir = os.path.join(POB_INSTALL, b_dir)
+                                build_path = os.path.join(b_dir, build_path)
+                            except Exception:
+                                build_path = os.path.join(POB_INSTALL, "Builds", build_path)
+                        if not build_path.endswith(".xml"):
+                            build_path += ".xml"
                         if os.path.exists(build_path):
                             return build_path
         except Exception as e:
@@ -283,9 +305,16 @@ def load_pob(req: LoadReq):
         else:
             build = _try_b64(build)
             if not os.path.isabs(build):
-                build = os.path.join(POB_INSTALL, "Builds", build)
+                b_dir = pob.get_builds_dir()
+                if b_dir and not os.path.isabs(b_dir):
+                    b_dir = os.path.join(POB_INSTALL, b_dir)
+                build = os.path.join(b_dir, build)
                 if not build.endswith(".xml"):
                     build += ".xml"
+                    
+        if not build:
+            raise HTTPException(status_code=400, detail="No active build found in PoB, and no build path was provided.")
+            
         try:
             pob.load_build(build)
             _loaded_build_path = build
@@ -297,7 +326,16 @@ def load_pob(req: LoadReq):
 
 @app.get("/builds")
 def list_builds():
-    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    try:
+        with _lock:
+            pob = _ensure_pob()
+            builds_dir = pob.get_builds_dir()
+    except Exception:
+        builds_dir = "Builds"
+        
+    if builds_dir and not os.path.isabs(builds_dir):
+        builds_dir = os.path.join(POB_INSTALL, builds_dir)
+        
     if not os.path.exists(builds_dir):
         return []
     
