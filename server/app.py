@@ -100,7 +100,7 @@ except Exception as e:
 app = FastAPI(
     title="PoB Injector Server",
     description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.15",
+    version="0.6.16",
 )
 
 import logging
@@ -187,7 +187,7 @@ def _try_b64(s: str) -> str:
 
 @app.get("/status")
 def status():
-    return {"running": _pob is not None, "import_error": str(_import_error) if _import_error else None}
+    return {"running": _pob is not None, "import_error": str(_import_error) if _import_error else None, "version": app.version}
 
 GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 

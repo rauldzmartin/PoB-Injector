@@ -10,7 +10,10 @@
     async checkStatus() {
       try {
         const res = await fetch(`${this.base}/status`);
-        return res.ok;
+        if (!res.ok) return false;
+        const data = await res.json();
+        this.serverVersion = data.version;
+        return true;
       } catch {
         return false;
       }
@@ -660,6 +663,13 @@
     updateBtn.className = 'pob-btn pob-glow';
     updateBtn.style.cssText = 'display:none; margin-left: 8px; border-color: #4caf50 !important; color: #81c784 !important; font-weight: bold; padding: 4px 12px;';
     updateBtn.onclick = async () => {
+      const isUserscript = typeof GM_info !== 'undefined';
+      if (isUserscript) {
+        window.open('https://github.com/rauldzmartin/PoB-Injector/releases/latest/download/pob-injector.user.js', '_blank');
+        updateBtn.style.display = 'none';
+        return;
+      }
+
       updateBtn.textContent = 'UPDATING...';
       updateBtn.disabled = true;
       updateBtn.classList.remove('pob-glow');
@@ -705,13 +715,22 @@
 
     navbar.append(onBtn, offBtn, spacer, statusMsg, applyBtn, updateBtn, settingsBtn);
 
+    const checkUpdateVisibility = async () => {
+      const hasUpdate = await API.checkUpdate();
+      const manifest = chrome.runtime.getManifest();
+      const extVersion = manifest.version_name || manifest.version;
+      
+      const serverIsNewer = API.serverVersion && extVersion && API.serverVersion !== extVersion;
+      
+      if ((hasUpdate || serverIsNewer) && updateBtn.style.display === 'none') {
+        updateBtn.style.display = 'block';
+        window.top.postMessage({ message: 'show_update_notification' }, '*');
+      }
+    };
+
     setInterval(async () => {
       if (serverOnline) {
-        const hasUpdate = await API.checkUpdate();
-        if (hasUpdate && updateBtn.style.display === 'none') {
-          updateBtn.style.display = 'block';
-          window.top.postMessage({ message: 'show_update_notification' }, '*');
-        }
+        await checkUpdateVisibility();
       }
     }, 3 * 60 * 1000);
 
@@ -732,11 +751,7 @@
           }
           await API.loadPoB(cfg.activeBuild || null);
           injectCode();
-          const hasUpdate = await API.checkUpdate();
-          if (hasUpdate) {
-            updateBtn.style.display = 'block';
-            window.top.postMessage({ message: 'show_update_notification' }, '*');
-          }
+          await checkUpdateVisibility();
         } catch (e) {
           console.error(e);
         }
