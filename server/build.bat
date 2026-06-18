@@ -16,6 +16,8 @@ echo Installing dependencies...
 call .venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+set PYINSTALLER_COMPILE_BOOTLOADER=1
+pip install --no-binary pyinstaller pyinstaller
 
 :: Generate ICO file
 python -c "from PIL import Image; img = Image.open('../extension/img/icon-128.png'); img.save('../extension/img/icon.ico', format='ICO')"
