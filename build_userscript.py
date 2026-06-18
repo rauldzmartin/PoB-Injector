@@ -88,7 +88,11 @@ def main():
 }})();
 """
 
-    out_path = os.path.join(here, "pob-injector.user.js")
+    out_dir = os.path.join(here, "dist")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    out_path = os.path.join(out_dir, "pob-injector.user.js")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(userscript)
         
