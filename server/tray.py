@@ -2,8 +2,13 @@ import os, sys, time, subprocess, threading
 import pystray
 from PIL import Image
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(HERE)
+if getattr(sys, 'frozen', False):
+    HERE = sys._MEIPASS
+    REPO_ROOT = HERE
+else:
+    HERE = os.path.dirname(os.path.abspath(__file__))
+    REPO_ROOT = os.path.dirname(HERE)
+
 ICON_PATH = os.path.join(REPO_ROOT, "extension", "img", "icon.png")
 
 server_process = None
@@ -16,6 +21,8 @@ try:
 except:
     pass
 
+import multiprocessing
+
 def get_python_exe():
     python_exe = sys.executable
     if "pythonw" in python_exe.lower() or "uvicorn" in python_exe.lower():
@@ -23,30 +30,30 @@ def get_python_exe():
     return python_exe
 
 def start_server():
-    global server_process, log_file
+    global log_file
     
-    python_exe = get_python_exe()
-    log_path = os.path.join(HERE, "server.log")
+    if getattr(sys, 'frozen', False):
+        log_path = os.path.join(os.path.dirname(sys.executable), "PoB-Injector.log")
+    else:
+        log_path = os.path.join(HERE, "PoB-Injector.log")
     
-    # We must keep the file handle open so stdout can write to it
+    # We must keep the file handle open so stdout can write to it if needed
     log_file = open(log_path, "w", encoding="utf-8")
+    sys.stdout = log_file
+    sys.stderr = log_file
     
-    CREATE_NO_WINDOW = 0x08000000
-    server_process = subprocess.Popen(
-        [python_exe, "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "5000"],
-        cwd=HERE, 
-        creationflags=CREATE_NO_WINDOW,
-        stdout=log_file,
-        stderr=subprocess.STDOUT
-    )
+    import uvicorn
+    from app import app as fastapi_app
+    
+    config = uvicorn.Config(fastapi_app, host="127.0.0.1", port=5000, log_level="info")
+    server = uvicorn.Server(config)
+    threading.Thread(target=server.run, daemon=True).start()
 
 def cleanup_and_exit(icon=None):
     if icon:
         icon.stop()
-    if viewer_process and viewer_process.poll() is None:
-        viewer_process.kill()
-    if server_process and server_process.poll() is None:
-        server_process.kill()
+    if viewer_process and viewer_process.is_alive():
+        viewer_process.terminate()
     if log_file:
         try:
             log_file.close()
@@ -57,23 +64,24 @@ def cleanup_and_exit(icon=None):
 def monitor_server(icon):
     time.sleep(1)
     icon.notify("Servidor iniciado correctamente.", "PoB Injector")
-    if server_process:
-        server_process.wait()
-    cleanup_and_exit(icon)
+    # In PyInstaller mode, Uvicorn runs in a thread. 
+    # If the user wants to close the app, they use the tray menu.
+    # We no longer wait for a separate process to die.
+    while True:
+        time.sleep(1)
+
+def run_viewer(target_log):
+    import log_viewer
+    log_viewer.main(target_log)
 
 def toggle_console(icon, item):
     global viewer_process
-    if viewer_process and viewer_process.poll() is None:
-        viewer_process.kill()
+    if viewer_process and viewer_process.is_alive():
+        viewer_process.terminate()
         viewer_process = None
     else:
-        python_exe = get_python_exe()
-        pythonw_exe = python_exe.replace("python.exe", "pythonw.exe")
-        if not os.path.exists(pythonw_exe):
-            pythonw_exe = python_exe
-            
-        viewer_path = os.path.join(HERE, "log_viewer.py")
-        viewer_process = subprocess.Popen([pythonw_exe, viewer_path], cwd=HERE)
+        viewer_process = multiprocessing.Process(target=run_viewer, args=("server.log",))
+        viewer_process.start()
 
 current_channel = "dev"
 
@@ -131,5 +139,6 @@ def create_tray():
     icon.run()
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     start_server()
     create_tray()

@@ -134,8 +134,7 @@ class PathOfBuilding:
     def __init__(self, pob_path, pob_install, verbose=False):
         self.verbose = verbose and True
         if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable)
-            data_dir = os.path.join(application_path, r'..\pob_wrapper\data')
+            data_dir = os.path.join(sys._MEIPASS, 'pob_wrapper', 'data')
         else:
             data_dir = importlib.resources.files('pob_wrapper').joinpath('data')
             
@@ -166,6 +165,10 @@ class PathOfBuilding:
         os.environ['POB_USERPATH'] = docs
         os.environ['POB_SCRIPTPATH'] = pob_path
         os.environ['POB_RUNTIMEPATH'] = pob_install
+        
+        # FIX: PyInstaller puts its temp folder at the start of PATH, which can contain conflicting DLLs 
+        # (like zlib1.dll) that break lcurl.dll. Force pob_install to the absolute front of PATH.
+        os.environ['PATH'] = f"{pob_install}{os.pathsep}{os.environ.get('PATH', '')}"
         
         print("DEBUG: data_dir =", data_dir)
         print("DEBUG: luajit path =", os.path.join(data_dir, 'luajit.exe'))

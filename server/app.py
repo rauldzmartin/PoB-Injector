@@ -8,7 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from dotenv import load_dotenv
-load_dotenv()
+if getattr(sys, 'frozen', False):
+    load_dotenv(os.path.join(os.path.dirname(sys.executable), ".env"))
+else:
+    load_dotenv()
 
 import ctypes
 if "POB_CONSOLE_TITLE" in os.environ:
@@ -18,7 +21,7 @@ POB_INSTALL_ENV = os.getenv("POB_INSTALL")
 
 def _find_pob_install() -> str:
     # 1. Check from .env
-    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "lua", "init.lua")):
+    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "Launch.lua")):
         return POB_INSTALL_ENV
 
     # 2. Check if PoB is running
@@ -29,7 +32,7 @@ def _find_pob_install() -> str:
             if p.Name and p.Name.lower() == 'path of building.exe':
                 if p.ExecutablePath:
                     pob_dir = os.path.dirname(p.ExecutablePath)
-                    if os.path.exists(os.path.join(pob_dir, "lua", "init.lua")):
+                    if os.path.exists(os.path.join(pob_dir, "Launch.lua")):
                         return pob_dir
     except Exception as e:
         print(f"Error checking WMI for running PoB: {e}")
@@ -38,16 +41,37 @@ def _find_pob_install() -> str:
     common = [
         r"C:\ProgramData\Path of Building Community",
         os.path.expandvars(r"%APPDATA%\Path of Building Community"),
+        os.path.expandvars(r"%APPDATA%\Path of Building Community (PoE2)"),
         os.path.expandvars(r"%PROGRAMDATA%\Path of Building Community"),
         os.path.expandvars(r"%LOCALAPPDATA%\Path of Building Community"),
         os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community")
     ]
     for p in common:
-        if os.path.exists(os.path.join(p, "lua", "init.lua")):
+        if os.path.exists(os.path.join(p, "Launch.lua")):
             return p
 
-    # Fallback
-    return POB_INSTALL_ENV if POB_INSTALL_ENV else ""
+    # Fallback - If we reached here, no valid path was found.
+    # If there was an invalid path in .env, ignore it.
+    if getattr(sys, 'frozen', False):
+        import tkinter as tk
+        from tkinter import filedialog, messagebox
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        messagebox.showinfo("PoB Injector", "Could not automatically locate Path of Building.\nPlease select the folder where 'Path of Building Community' is installed.")
+        folder = filedialog.askdirectory(title="Select Path of Building folder")
+        if folder and os.path.exists(os.path.join(folder, "Launch.lua")):
+            env_path = os.path.join(os.path.dirname(sys.executable), ".env")
+            try:
+                with open(env_path, "w") as f:
+                    f.write(f'POB_INSTALL="{folder}"\n')
+            except:
+                pass
+            return folder
+        else:
+            messagebox.showerror("Error", "The selected folder does not appear to contain Path of Building. The injector will now close.")
+            sys.exit(1)
+    return ""
 
 POB_INSTALL = _find_pob_install()
 POB_PATH    = os.getenv("POB_PATH", POB_INSTALL)
