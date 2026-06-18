@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 
 def main():
     here = os.path.abspath(os.path.dirname(__file__))
@@ -11,15 +12,54 @@ def main():
         
     version = manifest.get("version", "1.0.0")
     
-    css_path = os.path.join(ext_dir, "css", "content.css")
-    with open(css_path, "r", encoding="utf-8") as f:
-        css_content = f.read().replace("`", "\\`") # Escape backticks for JS template string
+    # Read CSS files
+    css_content = ""
+    for css_file in ["style.css", "trade.css"]:
+        css_path = os.path.join(ext_dir, "css", css_file)
+        if os.path.exists(css_path):
+            with open(css_path, "r", encoding="utf-8") as f:
+                css_content += f.read() + "\n"
+    
+    css_content = css_content.replace("`", "\\`")
         
+    # Read JS files
     js_path = os.path.join(ext_dir, "js", "trade.js")
     with open(js_path, "r", encoding="utf-8") as f:
         js_content = f.read()
+        
+    injected_js_path = os.path.join(ext_dir, "js", "trade-injected.js")
+    with open(injected_js_path, "r", encoding="utf-8") as f:
+        injected_js_content = f.read()
 
-    # The repo URL for automatic updates
+    # Base64 encode icon (optional, could just use a remote URL or empty data URL)
+    icon_path = os.path.join(ext_dir, "img", "icon.png")
+    icon_b64 = ""
+    if os.path.exists(icon_path):
+        with open(icon_path, "rb") as f:
+            icon_b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
+
+    # Replace chrome.runtime calls in trade.js to make it Tampermonkey compatible
+    js_content = js_content.replace(
+        "script.src = chrome.runtime.getURL('js/trade-injected.js');",
+        "script.textContent = `" + injected_js_content.replace("`", "\\`").replace("${", "\\${") + "`;"
+    )
+    js_content = js_content.replace("chrome.runtime.getURL('img/icon.png')", f"'{icon_b64}'")
+    js_content = js_content.replace("chrome.runtime.getManifest()", f"({{ version: '{version}' }})")
+    js_content = js_content.replace("chrome.runtime.sendMessage({action: 'reload_extension'});", "window.location.reload();")
+
+    # Mock chrome object if it doesn't exist to prevent undefined errors
+    mock_chrome = """
+    if (typeof chrome === 'undefined') {
+        window.chrome = {
+            runtime: {
+                getURL: (path) => '',
+                getManifest: () => ({ version: '""" + version + """' }),
+                sendMessage: () => {}
+            }
+        };
+    }
+    """
+
     repo_url = "https://raw.githubusercontent.com/rauldzmartin/PoB-Injector/main/pob-injector.user.js"
 
     userscript = f"""// ==UserScript==
@@ -28,7 +68,7 @@ def main():
 // @version      {version}
 // @description  Inline PoB impact for trade/trade2 via local FastAPI HTTP server
 // @author       Raul DZ Martin
-// @match        *://*.pathofexile.com/trade2/*
+// @match        *://*.pathofexile.com/trade*
 // @grant        none
 // @updateURL    {repo_url}
 // @downloadURL  {repo_url}
@@ -36,6 +76,7 @@ def main():
 
 (function() {{
     'use strict';
+{mock_chrome}
 
     // Inject CSS
     const style = document.createElement('style');
