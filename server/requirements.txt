@@ -6,6 +6,3 @@ python-dotenv
 pystray
 Pillow
 requests
-idna
-charset-normalizer
-certifi

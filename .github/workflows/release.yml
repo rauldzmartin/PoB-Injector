@@ -70,11 +70,7 @@ jobs:
       - name: Build Executable
         run: |
           python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
-          python -c "import certifi; print('Certifi CA bundle:', certifi.where())"
-          $cert_path = python -c "import certifi, os; print(os.path.dirname(certifi.where()))"
-          Write-Host "Certifi path: $cert_path"
-          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --version-file "version-info.txt" --hidden-import=idna --hidden-import=charset_normalizer --hidden-import=certifi --hidden-import=urllib3 --hidden-import=encodings.idna --add-data "${cert_path};certifi" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
-        shell: pwsh
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --version-file "version-info.txt" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
 
       - name: List Bundled Data (diagnostics)
         run: |
