@@ -209,12 +209,36 @@ try {{
     $startArgs = "/c start `"`" `"{exe_path}`" --updated"
     Start-Process -FilePath $startCmd -ArgumentList $startArgs -WindowStyle Hidden -WorkingDirectory "{exe_dir}"
     Write-Host "[OK] Application restart scheduled"
+    
+    # CRITICAL: Wait for the process to actually start before closing PowerShell
+    # If PowerShell exits too quickly, Windows may kill the child process
+    Write-Host "[INFO] Waiting for process to start..."
+    $maxWait = 15
+    $waited = 0
+    $processStarted = $false
+    while ($waited -lt $maxWait) {{
+        Start-Sleep -Seconds 1
+        $proc = Get-Process -Name "PoB-Injector" -ErrorAction SilentlyContinue
+        if ($proc) {{
+            $processStarted = $true
+            Write-Host "[OK] Process confirmed running (PID: $($proc.Id))"
+            break
+        }}
+        $waited++
+    }}
+    
+    if (-not $processStarted) {{
+        Write-Host "[WARNING] Process not detected after $maxWait seconds"
+        Write-Host "[WARNING] It may still start, or there may be an error"
+        Write-Host "[INFO] Check if application is running manually"
+        Write-Host ""
+        Start-Sleep -Seconds 3
+    }}
 }} catch {{
     Write-Host "[ERROR] Failed to restart: $_"
     Write-Host "[INFO] Please start the application manually"
     Write-Host ""
-    Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Start-Sleep -Seconds 3
     exit 1
 }}
 
