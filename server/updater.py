@@ -202,8 +202,12 @@ Start-Sleep -Seconds 3
 
 # Restart application
 try {{
-    Start-Process -FilePath "{exe_path}" -ArgumentList "--updated" -WorkingDirectory "{exe_dir}"
-    Write-Host "[OK] Application restarted"
+    # Use cmd /c start to fully detach the process from PowerShell
+    # This prevents PyInstaller issues with inherited handles/context
+    $startCmd = "cmd.exe"
+    $startArgs = "/c start `"`" `"{exe_path}`" --updated"
+    Start-Process -FilePath $startCmd -ArgumentList $startArgs -WindowStyle Hidden -WorkingDirectory "{exe_dir}"
+    Write-Host "[OK] Application restart scheduled"
 }} catch {{
     Write-Host "[ERROR] Failed to restart: $_"
     Write-Host "[INFO] Please start the application manually"
