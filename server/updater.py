@@ -442,6 +442,7 @@ def main():
     time.sleep(3)
     
     # Route to appropriate update method
+    success = False
     try:
         if is_compiled:
             # Compiled mode: use release
@@ -454,24 +455,23 @@ def main():
             print("\nUpdater finished successfully")
         else:
             print("\nUpdater finished with errors")
+            print("Closing in 5 seconds...")
+            time.sleep(5)
     except Exception as e:
         print(f"\n[FATAL] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
+        print("Closing in 5 seconds...")
+        time.sleep(5)
         
         if is_compiled:
             rollback_and_restart(exe_path, exe_path + ".old")
-    
-    # Close log
-    try:
-        log_file.close()
-    except:
-        pass
-    
-    # Keep window open for 5 seconds in case of error
-    if not success:
-        print("\nClosing in 5 seconds...")
-        time.sleep(5)
+    finally:
+        # Close log file last
+        try:
+            log_file.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     main()
