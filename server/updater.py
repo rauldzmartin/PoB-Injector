@@ -97,9 +97,9 @@ def main():
         exe_path = sys.executable
         new_exe = os.path.join(source_root, os.path.basename(exe_path))
         
-        # We must also copy the extension folder
+        real_root = os.path.dirname(exe_path)
         source_ext = os.path.join(source_root, "extension")
-        target_ext = os.path.join(repo_root, "extension")
+        target_ext = os.path.join(real_root, "extension")
         
         old_exe = exe_path + ".old"
         if os.path.exists(old_exe):
@@ -118,7 +118,7 @@ def main():
         except:
             pass
             
-        subprocess.Popen([exe_path, "--updated"], cwd=repo_root, creationflags=0x08000000)
+        subprocess.Popen([exe_path, "--updated"], cwd=real_root, creationflags=0x08000000)
         os._exit(0)
     else:
         print("Replacing files...")

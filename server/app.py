@@ -232,6 +232,9 @@ def update(branch: str = "main", version: str = ""):
     if getattr(sys, 'frozen', False) and not version:
         res = check_update(branch)
         version = res.get("remote_version", "")
+        
+    if version and version == app.version:
+        return {"status": "already_updated"}
     
     python_exe = sys.executable
     if "uvicorn" in python_exe.lower():
