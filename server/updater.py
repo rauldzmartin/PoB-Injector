@@ -156,6 +156,32 @@ if ($newExeSize -lt 1MB) {{
 
 Write-Host "[OK] New exe verified: $([math]::Round($newExeSize / 1MB, 2)) MB"
 
+# Wait for Windows to finish all I/O operations and release locks
+Write-Host "[INFO] Waiting for exe to be ready..."
+$maxWait = 10
+$waited = 0
+$exeReady = $false
+while ($waited -lt $maxWait) {{
+    try {{
+        # Try to open exe for reading (tests if file is locked)
+        $stream = [System.IO.File]::Open($exePath, 'Open', 'Read', 'None')
+        $stream.Close()
+        $exeReady = $true
+        Write-Host "[OK] Exe ready after $waited seconds"
+        break
+    }} catch {{
+        Start-Sleep -Seconds 1
+        $waited++
+    }}
+}}
+
+if (-not $exeReady) {{
+    Write-Host "[WARNING] Exe may still be locked after $maxWait seconds, proceeding anyway..."
+}}
+
+# Additional safety wait for Windows Defender/antivirus scanning
+Start-Sleep -Seconds 3
+
 # Step 7: Cleanup
 Write-Host ""
 Write-Host "[Step 7/7] Cleaning up..."
@@ -171,8 +197,8 @@ Write-Host ""
 Write-Host "============================================================"
 Write-Host "Update completed successfully!"
 Write-Host "============================================================"
-Write-Host "Restarting application in 2 seconds..."
-Start-Sleep -Seconds 2
+Write-Host "Restarting application in 3 seconds..."
+Start-Sleep -Seconds 3
 
 # Restart application
 try {{
