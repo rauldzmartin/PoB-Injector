@@ -1,4 +1,12 @@
-import sys, os, time, urllib.request, zipfile, shutil, subprocess, socket
+import sys, os, time, zipfile, shutil, subprocess, socket
+
+try:
+    import requests
+except ImportError:
+    # Fallback to urllib if requests not available (shouldn't happen in packaged exe)
+    import urllib.request
+    import urllib.error
+    requests = None
 
 def setup_logging(log_path):
     """Redirect stdout/stderr to updater.log"""
@@ -48,40 +56,74 @@ def kill_port_5000():
         print(f"[WARNING] Could not kill port 5000: {e}")
 
 def download_with_retry(url, dest, max_retries=3):
-    """Download with exponential backoff retry logic"""
+    """Download with exponential backoff retry logic using requests library"""
     for attempt in range(1, max_retries + 1):
         try:
             print(f"Downloading ({attempt}/{max_retries}): {url}")
-            req = urllib.request.Request(url, headers={'User-Agent': 'PoB-Injector-Updater/1.0'})
             
-            with urllib.request.urlopen(req, timeout=60) as response:
+            if requests:
+                # Use requests library (preferred, handles SSL/encodings better)
+                response = requests.get(
+                    url, 
+                    headers={'User-Agent': 'PoB-Injector-Updater/1.0'},
+                    timeout=60,
+                    stream=True
+                )
+                response.raise_for_status()
+                
                 total_size = int(response.headers.get('Content-Length', 0))
                 downloaded = 0
                 
                 with open(dest, 'wb') as out_file:
-                    while True:
-                        chunk = response.read(8192)
-                        if not chunk:
-                            break
-                        out_file.write(chunk)
-                        downloaded += len(chunk)
-                        if total_size > 0:
-                            progress = (downloaded / total_size) * 100
-                            print(f"Progress: {progress:.1f}% ({downloaded}/{total_size} bytes)", end='\r')
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            out_file.write(chunk)
+                            downloaded += len(chunk)
+                            if total_size > 0:
+                                progress = (downloaded / total_size) * 100
+                                print(f"Progress: {progress:.1f}% ({downloaded}/{total_size} bytes)", end='\r')
                 
                 print(f"\n[OK] Download completed: {downloaded} bytes")
+            else:
+                # Fallback to urllib
+                req = urllib.request.Request(url, headers={'User-Agent': 'PoB-Injector-Updater/1.0'})
                 
-                # Verify file exists and has content
-                if os.path.exists(dest) and os.path.getsize(dest) > 0:
-                    return True
-                else:
-                    raise Exception("Downloaded file is empty or missing")
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    total_size = int(response.headers.get('Content-Length', 0))
+                    downloaded = 0
                     
-        except urllib.error.HTTPError as e:
-            print(f"[ERROR] HTTP {e.code}: {e.reason}")
-            if e.code == 404:
-                print("[FATAL] Release not found (404) - cannot retry")
-                return False
+                    with open(dest, 'wb') as out_file:
+                        while True:
+                            chunk = response.read(8192)
+                            if not chunk:
+                                break
+                            out_file.write(chunk)
+                            downloaded += len(chunk)
+                            if total_size > 0:
+                                progress = (downloaded / total_size) * 100
+                                print(f"Progress: {progress:.1f}% ({downloaded}/{total_size} bytes)", end='\r')
+                    
+                    print(f"\n[OK] Download completed: {downloaded} bytes")
+            
+            # Verify file exists and has content
+            if os.path.exists(dest) and os.path.getsize(dest) > 0:
+                return True
+            else:
+                raise Exception("Downloaded file is empty or missing")
+                    
+        except (requests.exceptions.HTTPError if requests else urllib.error.HTTPError) as e:
+            if requests:
+                status_code = e.response.status_code if hasattr(e, 'response') else 0
+                print(f"[ERROR] HTTP {status_code}: {e}")
+                if status_code == 404:
+                    print("[FATAL] Release not found (404) - cannot retry")
+                    return False
+            else:
+                print(f"[ERROR] HTTP {e.code}: {e.reason}")
+                if e.code == 404:
+                    print("[FATAL] Release not found (404) - cannot retry")
+                    return False
+            
             if attempt < max_retries:
                 wait = 2 ** attempt  # Exponential backoff: 2, 4, 8 seconds
                 print(f"Retrying in {wait} seconds...")
