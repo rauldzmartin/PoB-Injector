@@ -82,7 +82,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.38-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.40-beta")
 
 app.add_middleware(
     CORSMiddleware,
