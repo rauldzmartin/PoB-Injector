@@ -82,7 +82,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.30-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.31-beta")
 
 app.add_middleware(
     CORSMiddleware,
@@ -135,7 +135,15 @@ def check_update(branch: str = "main"):
             remote_manifest = resp.json()
             remote_version = remote_manifest.get("version_name", "")
             
-            local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+            # Determine local manifest path based on execution mode
+            if getattr(sys, 'frozen', False):
+                # Frozen mode: manifest is next to the exe
+                exe_dir = os.path.dirname(sys.executable)
+                local_manifest_path = os.path.join(exe_dir, "extension", "manifest.json")
+            else:
+                # Dev mode: manifest is in repo
+                local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+            
             local_version = ""
             if os.path.exists(local_manifest_path):
                 with open(local_manifest_path, "r", encoding="utf-8") as f:
