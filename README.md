@@ -3,7 +3,6 @@
 A tool to seamlessly evaluate Path of Exile 2 items directly from your browser into Path of Building.
 
 ## 🌟 Features
-- **Inline Impact:** Hover over any item on the PoE2 trade site to instantly see its PoB impact compared to your active build.
 - **Runes & Sockets:** Apply runes individually or fill missing sockets on the fly.
 - **Amulet Anoints:** Override amulet anoints directly from the UI.
 - **Smart Sorting:** Click any PoB stat (like "Average Damage") to sort all visible trade results automatically.
