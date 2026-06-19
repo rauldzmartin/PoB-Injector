@@ -7,9 +7,10 @@ import sys, os, time, subprocess
 def generate_powershell_updater(repo, version, exe_dir, exe_path):
     """
     Generate PowerShell script that downloads, extracts, and installs update
-    Returns path to generated script
+    Returns path to generated BAT file (launcher)
     """
-    script_path = os.path.join(exe_dir, "updater_temp.ps1")
+    ps_script_path = os.path.join(exe_dir, "updater_temp.ps1")
+    bat_script_path = os.path.join(exe_dir, "updater_launch.bat")
     
     # GitHub release URL
     zip_url = f"https://github.com/{repo}/releases/download/v{version}/PoB_Injector_Release_v{version}.zip"
@@ -217,16 +218,31 @@ try {{
     exit 1
 }}
 
-# Self-destruct this script
+# Self-destruct both scripts
 Start-Sleep -Seconds 1
-Remove-Item "{script_path}" -Force -ErrorAction SilentlyContinue
+Remove-Item "{ps_script_path}" -Force -ErrorAction SilentlyContinue
+Remove-Item "{bat_script_path}" -Force -ErrorAction SilentlyContinue
 """
     
-    # Write script to file
-    with open(script_path, 'w', encoding='utf-8') as f:
+    # Write PowerShell script to file
+    with open(ps_script_path, 'w', encoding='utf-8') as f:
         f.write(ps_script)
     
-    return script_path
+    # Create BAT launcher that fully detaches from Python process
+    bat_script = f"""@echo off
+REM PoB Injector Update Launcher
+REM This BAT file detaches from Python and launches PowerShell updater
+
+start "" powershell.exe -ExecutionPolicy Bypass -NoProfile -File "{ps_script_path}"
+
+REM BAT exits immediately, PowerShell continues independently
+exit
+"""
+    
+    with open(bat_script_path, 'w', encoding='utf-8') as f:
+        f.write(bat_script)
+    
+    return bat_script_path
 
 def main():
     print("============================================================")
@@ -267,35 +283,35 @@ def main():
     print("Waiting for server to shut down...")
     time.sleep(2)
     
-    # Generate PowerShell script
+    # Generate PowerShell script and BAT launcher
     print("Generating PowerShell updater script...")
-    script_path = generate_powershell_updater(repo, version, exe_dir, exe_path)
-    print(f"[OK] Script generated: {script_path}")
+    bat_path = generate_powershell_updater(repo, version, exe_dir, exe_path)
+    print(f"[OK] Updater generated")
     print("")
     
-    # Execute PowerShell script
-    print("Launching PowerShell updater...")
+    # Execute BAT launcher (which starts PowerShell and exits immediately)
+    print("Launching updater...")
     print("============================================================")
     print("")
     
     try:
-        # Execute PowerShell script in a new window so user can see progress
-        subprocess.Popen([
-            'powershell.exe',
-            '-ExecutionPolicy', 'Bypass',
-            '-NoProfile',
-            '-File', script_path
-        ], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        # Execute BAT file - it will start PowerShell and exit immediately
+        # This fully detaches PowerShell from Python/PyInstaller process
+        subprocess.Popen([bat_path], shell=True)
         
-        print("[OK] PowerShell updater launched")
+        print("[OK] Updater launched")
         print("[INFO] This process will now exit")
         
     except Exception as e:
-        print(f"[ERROR] Failed to launch PowerShell: {e}")
+        print(f"[ERROR] Failed to launch updater: {e}")
         print("")
         print("Trying to clean up...")
         try:
-            os.remove(script_path)
+            os.remove(bat_path)
+            # Also try to remove .ps1 if it exists
+            ps_path = bat_path.replace(".bat", ".ps1")
+            if os.path.exists(ps_path):
+                os.remove(ps_path)
         except:
             pass
 
