@@ -44,7 +44,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r server/requirements.txt
-          pip install pillow
           pip install --no-binary pyinstaller pyinstaller
 
       - name: Build Executable
