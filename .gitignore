@@ -34,6 +34,9 @@ dist/
 *.exe
 *.ico
 
+# Exception: Bundled Lua runtime required for PoB integration
+!server/pob_wrapper/data/luajit.exe
+
 # AI / IDE
 .agents/
 .opencode/
