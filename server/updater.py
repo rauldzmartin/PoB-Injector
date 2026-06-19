@@ -61,13 +61,13 @@ if errorlevel 1 (
 echo [OK] Extracted to update folder >> "{log_path}"
 echo. >> "{log_path}"
 
-REM Step 4: Replace exe
+REM Step 4: Replace exe and extension
 echo [Step 4/5] Installing new version... >> "{log_path}"
 if exist "{exe_path}.old" del /f /q "{exe_path}.old" >nul 2>&1
 if exist "{exe_path}" move /y "{exe_path}" "{exe_path}.old" >> "{log_path}" 2>&1
 copy /y "%UPDATE_DIR%\\PoB-Injector\\PoB-Injector.exe" "{exe_path}" >> "{log_path}" 2>&1
 if errorlevel 1 (
-    echo [ERROR] Installation failed >> "{log_path}"
+    echo [ERROR] Exe installation failed >> "{log_path}"
     if exist "{exe_path}.old" (
         echo [INFO] Restoring backup... >> "{log_path}"
         move /y "{exe_path}.old" "{exe_path}" >nul 2>&1
@@ -76,7 +76,16 @@ if errorlevel 1 (
     timeout /t 5 /nobreak >nul
     exit /b 1
 )
-echo [OK] New version installed >> "{log_path}"
+echo [OK] Exe installed >> "{log_path}"
+
+REM Copy extension folder
+if exist "{exe_dir}\\extension" rmdir /s /q "{exe_dir}\\extension" >nul 2>&1
+xcopy /E /I /Y "%UPDATE_DIR%\\PoB-Injector\\extension" "{exe_dir}\\extension" >> "{log_path}" 2>&1
+if errorlevel 1 (
+    echo [WARNING] Extension copy failed >> "{log_path}"
+) else (
+    echo [OK] Extension installed >> "{log_path}"
+)
 echo. >> "{log_path}"
 
 REM Step 5: Start new exe
