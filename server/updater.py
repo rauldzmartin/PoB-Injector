@@ -63,11 +63,14 @@ def download_with_retry(url, dest, max_retries=3):
             
             if requests:
                 # Use requests library (preferred, handles SSL/encodings better)
+                # NOTE: verify=False temporarily to avoid certifi bundling issues
+                # TODO: Fix SSL verification by properly bundling certifi/cacert.pem
                 response = requests.get(
                     url, 
                     headers={'User-Agent': 'PoB-Injector-Updater/1.0'},
                     timeout=60,
-                    stream=True
+                    stream=True,
+                    verify=False  # Temporary workaround for PyInstaller certifi issues
                 )
                 response.raise_for_status()
                 
