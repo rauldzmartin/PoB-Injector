@@ -33,10 +33,15 @@ def _find_pob_install() -> str:
     # 3. Check common locations
     common = [
         r"C:\ProgramData\Path of Building Community",
+        r"C:\ProgramData\Path of Building Community (PoE2)",
         os.path.expandvars(r"%APPDATA%\Path of Building Community"),
+        os.path.expandvars(r"%APPDATA%\Path of Building Community (PoE2)"),
         os.path.expandvars(r"%PROGRAMDATA%\Path of Building Community"),
+        os.path.expandvars(r"%PROGRAMDATA%\Path of Building Community (PoE2)"),
         os.path.expandvars(r"%LOCALAPPDATA%\Path of Building Community"),
-        os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community")
+        os.path.expandvars(r"%LOCALAPPDATA%\Path of Building Community (PoE2)"),
+        os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community"),
+        os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community (PoE2)")
     ]
     for p in common:
         if os.path.exists(os.path.join(p, "lua", "init.lua")):
@@ -54,8 +59,16 @@ USER_POB_WRAPPER = os.getenv("USER_POB_WRAPPER")
 if USER_POB_WRAPPER and USER_POB_WRAPPER not in sys.path:
     sys.path.insert(0, USER_POB_WRAPPER)
 
-HERE = os.path.abspath(os.path.dirname(__file__))
-REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
+# Determine paths based on execution mode (frozen exe vs dev)
+if getattr(sys, 'frozen', False):
+    # PyInstaller frozen exe: use _MEIPASS for bundled files
+    HERE = sys._MEIPASS
+    REPO_ROOT = HERE
+else:
+    # Development mode: use normal relative paths
+    HERE = os.path.abspath(os.path.dirname(__file__))
+    REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
+
 PY_SRC = os.path.join(HERE, "pob_wrapper")
 
 if os.path.exists(PY_SRC) and HERE not in sys.path:
@@ -69,7 +82,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.28-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.29-beta")
 
 app.add_middleware(
     CORSMiddleware,

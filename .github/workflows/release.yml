@@ -46,10 +46,31 @@ jobs:
           pip install -r server/requirements.txt
           pip install --no-binary pyinstaller pyinstaller
 
+      - name: Update Version Info
+        run: |
+          $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
+          $VERSION_PARTS = $TAG_VERSION -replace '-.*$', '' -split '\.'
+          $MAJOR = $VERSION_PARTS[0]
+          $MINOR = $VERSION_PARTS[1]
+          $PATCH = $VERSION_PARTS[2]
+          
+          Write-Host "Updating version-info.txt with version: $TAG_VERSION"
+          
+          $content = Get-Content version-info.txt -Raw
+          $content = $content -replace "filevers=\(.*?\)", "filevers=($MAJOR, $MINOR, $PATCH, 0)"
+          $content = $content -replace "prodvers=\(.*?\)", "prodvers=($MAJOR, $MINOR, $PATCH, 0)"
+          $content = $content -replace "StringStruct\(u'FileVersion', u'.*?'\)", "StringStruct(u'FileVersion', u'$TAG_VERSION')"
+          $content = $content -replace "StringStruct\(u'ProductVersion', u'.*?'\)", "StringStruct(u'ProductVersion', u'$TAG_VERSION')"
+          
+          Set-Content version-info.txt -Value $content
+          
+          Write-Host "[OK] version-info.txt updated"
+        shell: pwsh
+
       - name: Build Executable
         run: |
           python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
-          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --version-file "version-info.txt" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
 
       - name: List Bundled Data (diagnostics)
         run: |

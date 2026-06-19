@@ -134,9 +134,10 @@ class PathOfBuilding:
     def __init__(self, pob_path, pob_install, verbose=False):
         self.verbose = verbose and True
         if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable)
-            data_dir = os.path.join(application_path, r'..\pob_wrapper\data')
+            # PyInstaller frozen exe: use _MEIPASS for bundled files
+            data_dir = os.path.join(sys._MEIPASS, 'pob_wrapper', 'data')
         else:
+            # Development mode: use importlib.resources
             data_dir = importlib.resources.files('pob_wrapper').joinpath('data')
             
         docs = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
