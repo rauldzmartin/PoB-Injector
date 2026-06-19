@@ -1,4 +1,4 @@
-import os, sys, time, subprocess, threading
+import os, sys, time, subprocess, threading, json, webbrowser
 import pystray
 from PIL import Image
 
@@ -10,10 +10,23 @@ else:
     REPO_ROOT = os.path.dirname(HERE)
 
 ICON_PATH = os.path.join(REPO_ROOT, "extension", "img", "icon.png")
+GITHUB_REPO = "rauldzmartin/PoB-Injector"
 
 server_process = None
 viewer_process = None
 log_file = None
+
+def get_current_version():
+    """Read current version from manifest.json"""
+    try:
+        manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+                return manifest.get("version_name", "unknown")
+    except:
+        pass
+    return "unknown"
 
 import ctypes
 try:
@@ -122,6 +135,15 @@ def trigger_update(icon, item):
 def quit_app(icon, item):
     cleanup_and_exit(icon)
 
+def view_release_notes(icon, item):
+    """Open GitHub release page in browser"""
+    version = get_current_version()
+    url = f"https://github.com/{GITHUB_REPO}/releases/tag/v{version}"
+    try:
+        webbrowser.open(url)
+    except Exception as e:
+        icon.notify(f"Could not open browser: {e}", "Error")
+
 def create_tray():
     image = Image.open(ICON_PATH)
     
@@ -134,6 +156,7 @@ def create_tray():
         pystray.MenuItem("Toggle console", toggle_console, default=True),
         pystray.MenuItem("Update", trigger_update),
         pystray.MenuItem("Update channel", channel_menu),
+        pystray.MenuItem("View Release Notes", view_release_notes),
         pystray.MenuItem("Quit", quit_app)
     )
     
@@ -144,7 +167,8 @@ def create_tray():
         def show_update_notif():
             import time
             time.sleep(2)
-            icon.notify("PoB Injector updated successfully to the latest version!", "Update Complete")
+            version = get_current_version()
+            icon.notify(f"Updated successfully to v{version}!", "Update Complete")
         threading.Thread(target=show_update_notif, daemon=True).start()
     elif "--update-failed" in sys.argv:
         def show_fail_notif():

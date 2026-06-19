@@ -69,7 +69,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.26-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.27-beta")
 
 app.add_middleware(
     CORSMiddleware,
@@ -137,13 +137,33 @@ def check_update(branch: str = "main"):
         return {"update_available": False, "error": str(e)}
 
 @app.post("/update")
-def update(branch: str = "main"):
+def update(branch: str = "main", version: str = ""):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
     
+    # If version not provided, get it from check_update
+    if not version:
+        data = check_update(branch)
+        if not data.get("update_available"):
+            return {"status": "no_update", "message": "Already on latest version"}
+        version = data.get("remote_version", "")
+    
+    if not version:
+        return {"status": "error", "message": "Could not determine version to update to"}
+    
+    # Determine what to pass to updater based on mode
+    # Compiled mode: pass version (downloads release)
+    # Dev mode: pass branch (downloads source)
+    if getattr(sys, 'frozen', False):
+        # Compiled exe: use release version
+        arg = version
+    else:
+        # Dev mode: use branch
+        arg = branch
+    
     # Spawn updater in a new console so it survives
     creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
+    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, arg], cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
     def kill_me():
@@ -151,7 +171,7 @@ def update(branch: str = "main"):
         time.sleep(1)
         os._exit(0)
     threading.Thread(target=kill_me).start()
-    return {"status": "updating"}
+    return {"status": "updating", "version": version}
 
 def _get_active_build() -> str:
     settings_path = os.path.join(POB_INSTALL, "Settings.xml")
