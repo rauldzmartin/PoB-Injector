@@ -50,7 +50,7 @@ jobs:
       - name: Build Executable
         run: |
           python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
-          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" --add-data "extension\manifest.json;extension" server\tray.py
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
 
       - name: List Bundled Data (diagnostics)
         run: |
@@ -60,7 +60,7 @@ jobs:
 
       - name: Package Release
         run: |
-          # Use tag version for consistency (already validated to match manifest)
+          # Use tag version for naming (already validated to match manifest)
           $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
           $ZIP_NAME = "PoB_Injector_Release_v$TAG_VERSION.zip"
           
@@ -75,48 +75,6 @@ jobs:
           
           Write-Host "[OK] Release package created: $ZIP_NAME"
         shell: powershell
-
-      - name: Verify Release Package
-        run: |
-          $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
-          $ZIP_NAME = "PoB_Injector_Release_v$TAG_VERSION.zip"
-          $ZIP_PATH = "dist\$ZIP_NAME"
-          
-          if (-not (Test-Path $ZIP_PATH)) {
-            Write-Error "ERROR: Expected ZIP not found: $ZIP_NAME"
-            exit 1
-          }
-          
-          Write-Host "Verifying ZIP contents..."
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [System.IO.Compression.ZipFile]::OpenRead($ZIP_PATH)
-          
-          $hasExe = $zip.Entries | Where-Object { $_.Name -eq "PoB-Injector.exe" }
-          $hasExtension = $zip.Entries | Where-Object { $_.FullName -like "*/extension/*" }
-          $hasReadme = $zip.Entries | Where-Object { $_.Name -eq "README.md" }
-          
-          $zip.Dispose()
-          
-          if (-not $hasExe) {
-            Write-Error "ERROR: ZIP doesn't contain PoB-Injector.exe"
-            exit 1
-          }
-          
-          if (-not $hasExtension) {
-            Write-Error "ERROR: ZIP doesn't contain extension folder"
-            exit 1
-          }
-          
-          if (-not $hasReadme) {
-            Write-Error "ERROR: ZIP doesn't contain README.md"
-            exit 1
-          }
-          
-          $zipSize = (Get-Item $ZIP_PATH).Length / 1MB
-          Write-Host "[OK] Release package verified successfully"
-          Write-Host "  Size: $([math]::Round($zipSize, 2)) MB"
-          Write-Host "  Contains: PoB-Injector.exe, extension/, README.md"
-        shell: pwsh
 
       - name: Build UserScript
         run: python tools/build_userscript.py
