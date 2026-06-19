@@ -39,7 +39,6 @@ function imageHandleClass:ImageSize() return 1, 1 end
 -- ==== rendering (stubs) ====
 function RenderInit() end
 function GetScreenSize() return 1920, 1080 end
-function GetVirtualScreenSize() return 1920, 1080 end
 function SetClearColor(_,_,_,_) end
 function SetDrawLayer(_,_) end
 function SetViewport(_,_,_,_) end

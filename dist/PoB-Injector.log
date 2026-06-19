@@ -1,0 +1,214 @@
+INFO:     Started server process [131160]
+INFO:     Waiting for application startup.
+
+======================================
+  PoB Injector Server v0.6.8
+======================================
+
+[v0.6.8] 13:58:55 - INFO - PoB Installation path: C:\Users\rauldzmartin\AppData\Roaming\Path of Building Community (PoE2)
+DEBUG: data_dir = C:\Users\RAULDZ~1\AppData\Local\Temp\_MEI1258762\pob_wrapper\data
+DEBUG: luajit path = C:\Users\RAULDZ~1\AppData\Local\Temp\_MEI1258762\pob_wrapper\data\luajit.exe
+DEBUG: cli.lua path = C:\Users\RAULDZ~1\AppData\Local\Temp\_MEI1258762\pob_wrapper\data\cli.lua
+DEBUG: cwd = C:\Users\rauldzmartin\AppData\Roaming\Path of Building Community (PoE2)
+=== LUA: Started
+
+<<< getBuildsDir()
+>>> !*>>>>>>>>>>>>*!
+
+>>> !*------------*!
+
+>>> {"status":"success","result":"C:\\Users\\rauldzmartin\\Documents/Path of Building (PoE2)/Builds/"}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 13:58:56 - INFO - PoB Builds path: C:\Users\rauldzmartin\Documents\Path of Building (PoE2)\Builds
+[v0.6.8] 13:58:56 - INFO - Application startup complete.
+[v0.6.8] 13:58:56 - INFO - Uvicorn running on http://127.0.0.1:5000 (Press CTRL+C to quit)
+[v0.6.8] 13:58:59 - INFO - "GET /amulet-enchants?limit=1000 HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /status HTTP/1.1" 200
+<<< getBuildsDir()
+>>> !*>>>>>>>>>>>>*!
+
+>>> !*------------*!
+
+>>> {"status":"success","result":"C:\\Users\\rauldzmartin\\Documents/Path of Building (PoE2)/Builds/"}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 13:58:59 - INFO - "GET /builds HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "OPTIONS /load_pob HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "POST /load_pob HTTP/1.1" 400
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:58:59 - INFO - "GET /runes?slot=crossbow%2Cweapon HTTP/1.1" 200
+[v0.6.8] 13:59:00 - INFO - "OPTIONS /item-impact HTTP/1.1" 200
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nAgony Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nItem Level: 81\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 104 to 163 Fire Damage\nAdds 3 to 214 Lightning Damage\n+45 to Accuracy Rating\nGrants 5 Life per Enemy Hit\nGain 27 Mana per enemy killed\n15% increased Light Radius\n--------\n~b/o 20 exalted", false)
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Agony Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB97123104-163^x7F7F7F, ^xADAA473-214","^x7F7F7FElemental DPS: ^x8888FF399.3","^x7F7F7FTotal DPS: ^x8888FF518.1","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 104 to 163 Fire Damage","^x8888FFAdds 3 to 214 Lightning Damage","^x8888FF+45 to Accuracy Rating","^x8888FFGrants 5 Life per Enemy Hit","^x8888FFGain 27 Mana per enemy killed","^x8888FF15% increased Light Radius","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-52,322.0 Average Damage (-51.3%)","^x33FF77+0.05% Effective Crit Chance","^x33FF77+1% Hit Chance","^xDD0022-27,558.0 Hit DPS (-51.3%)","^xDD0022-28.6 Bleed DPS (-37.5%)","^x33FF77+285.9 Ignite DPS (+82.2%)","^x33FF77+257.3 Total DoT DPS (+60.6%)","^xDD0022-27,300.7 Combined DPS (-50.4%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-27.1 Life Leech/On Hit Rate (-32.1%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nWrath Core\nSiege Crossbow\n--------\nQuality: +10% (augmented)\nPhysical Damage: 38-149 (augmented)\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 62 Str, 62 Dex\n--------\nSockets: S S\n--------\nItem Level: 82\n--------\nGrenade Skills Fire an additional Projectile\n--------\n18% increased Physical Damage (rune)\nAdds 13 to 16 Fire Damage (rune)\nBonded: 30% increased Ignite Magnitude (rune)\nBonded: 20% increased effect of Fully Broken Armour (rune)\nAdds 89 to 142 Fire Damage\nAdds 6 to 213 Lightning Damage\n30% reduced Attribute Requirements\nLoads an additional bolt\nLeeches 8.61% of Physical Damage as Life\n--------\n~b/o 20 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Wrath Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FQuality: ^x8888FF+10%","^x7F7F7FPhysical Damage: ^x8888FF38-149 (154.3 DPS)","^x7F7F7FElemental Damage: ^xB97123102-158^x7F7F7F, ^xADAA476-213","^x7F7F7FElemental DPS: ^x8888FF395.2","^x7F7F7FTotal DPS: ^x8888FF549.5","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","^x7F7F7FSockets: S S","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^x8888FF62 ^x7F7F7FStr^x7F7F7F, ^x8888FF62 ^x7F7F7FDex","----","^xB8DAF118% increased Physical Damage","^xB8DAF1Adds 13 to 16 Fire Damage","^xB8DAF1Bonded: 30% increased Ignite Magnitude","^xB8DAF1Bonded: 20% increased effect of Fully Broken Armour","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 89 to 142 Fire Damage","^x8888FFAdds 6 to 213 Lightning Damage","^x8888FF30% reduced Attribute Requirements","^x8888FFLoads an additional bolt","^x8888FFLeeches 8.61% of Physical Damage as Life","^xF05050~b/o 20 exalted ^8(Not supported in PoB yet)","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-50,458.4 Average Damage (-49.5%)","^xDD0022-26,576.4 Hit DPS (-49.5%)","^xDD0022-15.1 Bleed DPS (-19.7%)","^x33FF77+368.5 Ignite DPS (+105.9%)","^x33FF77+353.4 Total DoT DPS (+83.3%)","^xDD0022-26,223.0 Combined DPS (-48.5%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nKraken Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nItem Level: 83\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 88 to 112 Fire Damage\nAdds 115 to 184 Cold Damage\n+31 to Strength\nGrants 5 Life per Enemy Hit\nLeeches 8.25% of Physical Damage as Mana\n--------\n~b/o 30 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Kraken Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB9712388-112^x7F7F7F, ^x3F6DB3115-184","^x7F7F7FElemental DPS: ^x8888FF411.7","^x7F7F7FTotal DPS: ^x8888FF530.5","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 88 to 112 Fire Damage","^x8888FFAdds 115 to 184 Cold Damage","^x8888FF+31 to Strength","^x8888FFGrants 5 Life per Enemy Hit","^x8888FFLeeches 8.25% of Physical Damage as Mana","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-55,561.5 Average Damage (-54.5%)","^xDD0022-29,264.3 Hit DPS (-54.5%)","^xDD0022-29.2 Bleed DPS (-38.2%)","^x33FF77+93.0 Ignite DPS (+26.7%)","^x33FF77+63.8 Total DoT DPS (+15.0%)","^xDD0022-29,200.5 Combined DPS (-54.0%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^x33FF77+31 Strength","^x33FF77+433 Effective Hit Pool (+0.7%)","^x33FF77+62 Phys Max Hit (+0.7%)","^x33FF77+222 Elemental Max Hit (+0.7%)","^x33FF77+76 Chaos Max Hit (+0.7%)","^x33FF77+62 Total Life (+3.4%)","^xDD0022-27.6 Life Leech/On Hit Rate (-32.7%)"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nDusk Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 57 Str, 57 Dex\n--------\nItem Level: 80\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 107 to 192 Fire Damage\nAdds 78 to 102 Cold Damage\n35% reduced Attribute Requirements\n+31 to Strength\nLeeches 8.53% of Physical Damage as Life\n--------\n~b/o 39 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Dusk Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB97123107-192^x7F7F7F, ^x3F6DB378-102","^x7F7F7FElemental DPS: ^x8888FF395.2","^x7F7F7FTotal DPS: ^x8888FF514.0","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^x8888FF57 ^x7F7F7FStr^x7F7F7F, ^x8888FF57 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 107 to 192 Fire Damage","^x8888FFAdds 78 to 102 Cold Damage","^x8888FF35% reduced Attribute Requirements","^x8888FF+31 to Strength","^x8888FFLeeches 8.53% of Physical Damage as Life","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-56,343.0 Average Damage (-55.3%)","^xDD0022-29,675.8 Hit DPS (-55.3%)","^xDD0022-29.2 Bleed DPS (-38.2%)","^x33FF77+377.7 Ignite DPS (+108.6%)","^x33FF77+348.5 Total DoT DPS (+82.1%)","^xDD0022-29,327.3 Combined DPS (-54.2%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^x33FF77+31 Strength","^x33FF77+433 Effective Hit Pool (+0.7%)","^x33FF77+62 Phys Max Hit (+0.7%)","^x33FF77+222 Elemental Max Hit (+0.7%)","^x33FF77+76 Chaos Max Hit (+0.7%)","^x33FF77+62 Total Life (+3.4%)","^x33FF77+2.9 Life Leech/On Hit Rate (+3.4%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nFoe Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 7.49% (augmented)\nAttacks per Second: 1.88 (augmented)\nReload Time: 0.66 (augmented)\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nItem Level: 82\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 79 to 132 Fire Damage\nAdds 74 to 119 Cold Damage\n+2.49% to Critical Hit Chance\n14% increased Attack Speed\nLeeches 9.23% of Physical Damage as Life\n--------\n~b/o 40 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Foe Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (135.4 DPS)","^x7F7F7FElemental Damage: ^xB9712379-132^x7F7F7F, ^x3F6DB374-119","^x7F7F7FElemental DPS: ^x8888FF379.8","^x7F7F7FTotal DPS: ^x8888FF515.1","^x7F7F7FCritical Hit Chance: ^x8888FF7.49%","^x7F7F7FAttacks per Second: ^x8888FF1.88","^x7F7F7FReload Time: ^x8888FF0.66","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 79 to 132 Fire Damage","^x8888FFAdds 74 to 119 Cold Damage","^x8888FF+2.49% to Critical Hit Chance","^x8888FF14% increased Attack Speed","^x8888FFLeeches 9.23% of Physical Damage as Life","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-59,273.5 Average Damage (-58.1%)","^x33FF77+2.49% Crit Chance","^x33FF77+2.22% Effective Crit Chance","^xDD0022-31,219.4 Hit DPS (-58.1%)","^xDD0022-28.0 Bleed DPS (-36.6%)","^x33FF77+146.8 Ignite DPS (+42.2%)","^x33FF77+118.8 Total DoT DPS (+28.0%)","^xDD0022-31,100.5 Combined DPS (-57.5%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nPain Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 62 Str, 62 Dex\n--------\nSockets: S S\n--------\nItem Level: 81\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 104 to 173 Fire Damage\nAdds 7 to 182 Lightning Damage\n30% reduced Attribute Requirements\n+4 to Level of all Projectile Skills\nGain 37 Mana per enemy killed\n--------\n~b/o 40 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Pain Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB97123104-173^x7F7F7F, ^xADAA477-182","^x7F7F7FElemental DPS: ^x8888FF384.4","^x7F7F7FTotal DPS: ^x8888FF503.2","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","^x7F7F7FSockets: S S","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^x8888FF62 ^x7F7F7FStr^x7F7F7F, ^x8888FF62 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 104 to 173 Fire Damage","^x8888FFAdds 7 to 182 Lightning Damage","^x8888FF30% reduced Attribute Requirements","^x8888FF+4 to Level of all Projectile Skills","^x8888FFGain 37 Mana per enemy killed","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-37,662.0 Average Damage (-36.9%)","^xDD0022-19,836.6 Hit DPS (-36.9%)","^xDD0022-12.8 Bleed DPS (-16.8%)","^x33FF77+838.9 Ignite DPS (+241.2%)","^x33FF77+826.1 Total DoT DPS (+194.7%)","^xDD0022-19,010.5 Combined DPS (-35.1%)","^xDD0022-6.5 Life Leech/On Hit Rate (-7.7%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nHonour Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.96 (augmented)\nReload Time: 0.63 (augmented)\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nItem Level: 80\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 77 to 136 Fire Damage\nAdds 6 to 218 Lightning Damage\n19% increased Attack Speed\nGain 69 Life per enemy killed\nProjectiles have 35% increased Critical Damage Bonus against Enemies within 2m (desecrated)\n--------\n~b/o 50 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Honour Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (141.1 DPS)","^x7F7F7FElemental Damage: ^xB9712377-136^x7F7F7F, ^xADAA476-218","^x7F7F7FElemental DPS: ^x8888FF428.3","^x7F7F7FTotal DPS: ^x8888FF569.4","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^x8888FF1.96","^x7F7F7FReload Time: ^x8888FF0.63","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 77 to 136 Fire Damage","^x8888FFAdds 6 to 218 Lightning Damage","^x8888FF19% increased Attack Speed","^x8888FFGain 69 Life per enemy killed","^x8888FFProjectiles have 35% increased Critical Damage Bonus against Enemies within 2m","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-54,595.4 Average Damage (-53.6%)","^x33FF77+35% Crit Multiplier","^xDD0022-28,755.4 Hit DPS (-53.6%)","^xDD0022-28.5 Bleed DPS (-37.3%)","^x33FF77+150.1 Ignite DPS (+43.2%)","^x33FF77+121.6 Total DoT DPS (+28.7%)","^xDD0022-28,633.8 Combined DPS (-52.9%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-30.1 Life Leech/On Hit Rate (-35.6%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nBlight Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nItem Level: 81\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 80 to 114 Fire Damage\nAdds 4 to 222 Lightning Damage\n+29 to Strength\n+9 to Dexterity\nGrants 4 Life per Enemy Hit\n--------\n~b/o 60 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Blight Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB9712380-114^x7F7F7F, ^xADAA474-222","^x7F7F7FElemental DPS: ^x8888FF346.5","^x7F7F7FTotal DPS: ^x8888FF465.3","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 80 to 114 Fire Damage","^x8888FFAdds 4 to 222 Lightning Damage","^x8888FF+29 to Strength","^x8888FF+9 to Dexterity","^x8888FFGrants 4 Life per Enemy Hit","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-55,946.7 Average Damage (-54.9%)","^x33FF77+0.05% Effective Crit Chance","^x33FF77+1% Hit Chance","^xDD0022-29,467.1 Hit DPS (-54.9%)","^xDD0022-28.6 Bleed DPS (-37.5%)","^x33FF77+75.4 Ignite DPS (+21.7%)","^x33FF77+46.8 Total DoT DPS (+11.0%)","^xDD0022-29,420.3 Combined DPS (-54.4%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^x33FF77+29 Strength","^x33FF77+9 Dexterity","^x33FF77+405 Effective Hit Pool (+0.7%)","^x33FF77+58 Phys Max Hit (+0.7%)","^x33FF77+207 Elemental Max Hit (+0.7%)","^x33FF77+71 Chaos Max Hit (+0.7%)","^x33FF77+58 Total Life (+3.2%)","^xDD0022-27.4 Life Leech/On Hit Rate (-32.5%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nDragon Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 62 Str, 62 Dex\n--------\nItem Level: 82\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 97 to 140 Fire Damage\nAdds 5 to 240 Lightning Damage\n30% reduced Attribute Requirements\nGain 32 Life per enemy killed\nGain 24 Mana per enemy killed\n--------\n~b/o 100 exalted", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Dragon Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB9712397-140^x7F7F7F, ^xADAA475-240","^x7F7F7FElemental DPS: ^x8888FF397.6","^x7F7F7FTotal DPS: ^x8888FF516.5","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^x8888FF62 ^x7F7F7FStr^x7F7F7F, ^x8888FF62 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 97 to 140 Fire Damage","^x8888FFAdds 5 to 240 Lightning Damage","^x8888FF30% reduced Attribute Requirements","^x8888FFGain 32 Life per enemy killed","^x8888FFGain 24 Mana per enemy killed","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-52,811.0 Average Damage (-51.8%)","^xDD0022-27,815.6 Hit DPS (-51.8%)","^xDD0022-29.2 Bleed DPS (-38.2%)","^x33FF77+190.1 Ignite DPS (+54.6%)","^x33FF77+160.9 Total DoT DPS (+37.9%)","^xDD0022-27,654.7 Combined DPS (-51.1%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-30.1 Life Leech/On Hit Rate (-35.6%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+<<< testItemForDisplay("Item Class: Crossbow\nRarity: Rare\nCorpse Core\nSiege Crossbow\n--------\nPhysical Damage: 29-115\nCritical Hit Chance: 5.00%\nAttacks per Second: 1.65\nReload Time: 0.75\n--------\nRequires: Level 79, 89 Str, 89 Dex\n--------\nSockets: S\n--------\nItem Level: 81\n--------\nGrenade Skills Fire an additional Projectile\n--------\nAdds 105 to 156 Fire Damage\nAdds 13 to 270 Lightning Damage\nLeeches 9.76% of Physical Damage as Life\nGain 31 Mana per enemy killed\n--------\n~b/o 1 divine", false)
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+>>> !*>>>>>>>>>>>>*!
+
+>>> Testing item
+
+>>> !*------------*!
+
+>>> {"status":"success","result":["^xFFFF77Corpse Core","^xFFFF77Siege Crossbow","----","^x7F7F7FCrossbow","^x7F7F7FPhysical Damage: ^x8888FF29-115 (118.8 DPS)","^x7F7F7FElemental Damage: ^xB97123105-156^x7F7F7F, ^xADAA4713-270","^x7F7F7FElemental DPS: ^x8888FF448.8","^x7F7F7FTotal DPS: ^x8888FF567.6","^x7F7F7FCritical Hit Chance: ^75.00%","^x7F7F7FAttacks per Second: ^71.65","^x7F7F7FReload Time: ^70.75","^x7F7F7FSockets: S","----","^x7F7F7FRequires ^x7F7F7FLevel ^779^x7F7F7F, ^789 ^x7F7F7FStr^x7F7F7F, ^789 ^x7F7F7FDex","----","^x8888FFGrenade Skills Fire an additional Projectile","^x8888FFAdds 105 to 156 Fire Damage","^x8888FFAdds 13 to 270 Lightning Damage","^x8888FFLeeches 9.76% of Physical Damage as Life","^x8888FFGain 31 Mana per enemy killed","----","^x80A080Tip: Press Ctrl+D to disable the display of stat differences.","^7Equipping this item in Weapon 1 will give you:\n(replacing ^xFFFF77Maelstrom Core, Siege Crossbow^7)","^xDD0022-49,034.3 Average Damage (-48.1%)","^xDD0022-25,826.4 Hit DPS (-48.1%)","^xDD0022-29.2 Bleed DPS (-38.2%)","^x33FF77+266.9 Ignite DPS (+76.7%)","^x33FF77+237.7 Total DoT DPS (+56.0%)","^xDD0022-25,588.6 Combined DPS (-47.3%)","^xDD0022-0.1m AoE Radius","^x33FF77-54 Mana Cost (-24.9%)","^x33FF77-24.73 Mana Cost per second (-24.9%)","^xDD0022-27.1 Mana Leech/On Hit Rate"]}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 13:59:00 - INFO - "POST /item-impact HTTP/1.1" 200
+[v0.6.8] 14:00:39 - INFO - "GET /amulet-enchants?limit=1000 HTTP/1.1" 200
+[v0.6.8] 14:00:39 - INFO - "GET /status HTTP/1.1" 200
+<<< getBuildsDir()
+>>> !*>>>>>>>>>>>>*!
+
+>>> !*------------*!
+
+>>> {"status":"success","result":"C:\\Users\\rauldzmartin\\Documents/Path of Building (PoE2)/Builds/"}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 14:00:39 - INFO - "GET /builds HTTP/1.1" 200
+[v0.6.8] 14:00:39 - INFO - "POST /load_pob HTTP/1.1" 400
+[v0.6.8] 14:00:46 - INFO - "GET /check-update?branch=main HTTP/1.1" 200
+[v0.6.8] 14:00:55 - INFO - "GET /amulet-enchants?limit=1000 HTTP/1.1" 200
+[v0.6.8] 14:00:55 - INFO - "GET /status HTTP/1.1" 200
+<<< getBuildsDir()
+>>> !*>>>>>>>>>>>>*!
+
+>>> !*------------*!
+
+>>> {"status":"success","result":"C:\\Users\\rauldzmartin\\Documents/Path of Building (PoE2)/Builds/"}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 14:00:55 - INFO - "GET /builds HTTP/1.1" 200
+[v0.6.8] 14:00:55 - INFO - "POST /load_pob HTTP/1.1" 400
+[v0.6.8] 14:01:08 - INFO - "GET /amulet-enchants?limit=1000 HTTP/1.1" 200
+[v0.6.8] 14:01:08 - INFO - "GET /status HTTP/1.1" 200
+<<< getBuildsDir()
+>>> !*>>>>>>>>>>>>*!
+
+>>> !*------------*!
+
+>>> {"status":"success","result":"C:\\Users\\rauldzmartin\\Documents/Path of Building (PoE2)/Builds/"}
+
+>>> !*<<<<<<<<<<<<*!
+
+[v0.6.8] 14:01:08 - INFO - "GET /builds HTTP/1.1" 200
+[v0.6.8] 14:01:08 - INFO - "POST /load_pob HTTP/1.1" 400
+[v0.6.8] 14:04:08 - INFO - "GET /check-update?branch=main HTTP/1.1" 200
+[v0.6.8] 14:07:08 - INFO - "GET /check-update?branch=main HTTP/1.1" 200
+[v0.6.8] 14:09:32 - INFO - "GET /check-update?branch=dev HTTP/1.1" 200

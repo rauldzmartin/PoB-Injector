@@ -15,14 +15,10 @@ pnpm-lock.yaml
 # Build outputs
 releases/
 *.zip
-build/
-dist/
-*.ico
 
 # Misc
 *.bak
 *.orig
-*.log
 
 # Python / Server
 __pycache__/

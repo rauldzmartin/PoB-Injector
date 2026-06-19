@@ -3,6 +3,3 @@ uvicorn
 pydantic
 pywin32
 python-dotenv
-pystray
-Pillow
-pyinstaller

@@ -4,7 +4,7 @@
   let itemByDataId = {};
   let enabled = document.currentScript.getAttribute('enabled') == 'true';
   const disabledOverridesByItem = new Set();
-
+  
   const pobStyle = document.createElement('style');
   pobStyle.textContent = '.pob-disabled .pob_wrapper, .pob-disabled .pob_import_wrap { display: none !important; }';
   document.head.appendChild(pobStyle);
@@ -23,7 +23,7 @@
   function propLine(propNode) {
     if (!propNode) return null;
     const label = textContent(propNode.querySelector(':scope > span:first-child'));
-    const val = textContent(propNode.querySelector(':scope > span:nth-child(2)'));
+    const val   = textContent(propNode.querySelector(':scope > span:nth-child(2)'));
     if (!label) return null;
     const isAug = !!propNode.querySelector('.colourAugmented');
     const aug = isAug ? ' (augmented)' : '';
@@ -43,18 +43,18 @@
 
     // armour subtags
     if (s === 'helmet') buckets.add(IC.HELMET), buckets.add(IC.ARMOUR);
-    if (s === 'boots') buckets.add(IC.BOOTS), buckets.add(IC.ARMOUR);
+    if (s === 'boots')  buckets.add(IC.BOOTS),  buckets.add(IC.ARMOUR);
     if (s === 'gloves') buckets.add(IC.GLOVES), buckets.add(IC.ARMOUR);
     if (s === 'body armour' || s === 'body armor' || s === 'chest') buckets.add(IC.BODY), buckets.add(IC.ARMOUR);
     if (s === 'shield') buckets.add(IC.SHIELD), buckets.add(IC.ARMOUR);
-    if (s === 'focus') buckets.add(IC.FOCUS), buckets.add(IC.ARMOUR);
+    if (s === 'focus')  buckets.add(IC.FOCUS),  buckets.add(IC.ARMOUR);
 
     // weapon & specialisations
-    if (s === 'bow') { buckets.add(IC.BOW); buckets.add(IC.WEAPON); }
-    if (s === 'crossbow') { buckets.add(IC.CROSSBOW); buckets.add(IC.WEAPON); }
-    if (s === 'wand') { buckets.add(IC.CASTER); }              // caster group
-    if (s === 'staff') { buckets.add(IC.CASTER); }              // caster group
-    if (s === 'sceptre') { buckets.add(IC.SCEPTRE); }             // sceptre-only group
+    if (s === 'bow')       { buckets.add(IC.BOW); buckets.add(IC.WEAPON); }
+    if (s === 'crossbow')  { buckets.add(IC.CROSSBOW); buckets.add(IC.WEAPON); }
+    if (s === 'wand')      { buckets.add(IC.CASTER); }              // caster group
+    if (s === 'staff')     { buckets.add(IC.CASTER); }              // caster group
+    if (s === 'sceptre')   { buckets.add(IC.SCEPTRE); }             // sceptre-only group
     if (s === 'one hand mace' || s === 'two hand mace' || s === 'quarterstaff' || s === 'spear') {
       buckets.add(IC.WEAPON);
     }
@@ -70,7 +70,7 @@
     if (s === 'body armour' || s === 'body armor' || /body armour|body armor|chest/.test(t)) return 2;
     if (s === 'helmet' || /helm/.test(t)) return 1;
     if (s === 'gloves' || /glove/.test(t)) return 1;
-    if (s === 'boots' || /boot/.test(t)) return 1;
+    if (s === 'boots'  || /boot/.test(t))  return 1;
 
     // Weapons / Off-hands
     if (s === 'bow') return 2;
@@ -206,7 +206,7 @@
       if (enchantMods.length) lines.push(...enchantMods);
       if (implicitMods.length) lines.push(...implicitMods);
     }
-
+    
     if (explicitGroup.length) {
       lines.push(sep);
       lines.push(...explicitGroup);
@@ -228,11 +228,11 @@
 
     const canHaveQuality = itemClass ? /Bow|Crossbow|Sword|Mace|Wand|Sceptre|Quarterstaff|Focus|Armour|Helmet|Gloves|Boots|Shield|Flask/i.test(itemClass) : false;
 
-    return {
-      text: lines.join('\n'),
-      sockets: socketCount,
-      maxSockets,
-      runeSlots,
+    return { 
+      text: lines.join('\n'), 
+      sockets: socketCount, 
+      maxSockets, 
+      runeSlots, 
       itemTypeLabel: label,
       isCorrupted: !!isCorrupted,
       canHaveQuality
@@ -249,7 +249,7 @@
           if (meta && typeof meta === 'object') return { ...meta, text: t };
           return { text: t, sockets: 0, maxSockets: 0, runeSlots: '', itemTypeLabel: 'Item' };
         }
-      } catch (e) { }
+      } catch (e) {}
     }
     return getItemTextFromDOM(node);
   }
@@ -263,14 +263,14 @@
       pobWrap.className = 'pob_wrapper';
       pobWrap.style.position = 'relative';
       parent.appendChild(pobWrap);
-
+      
       const toggleWrap = document.createElement('div');
       toggleWrap.className = 'pob-override-toggle-wrap';
       toggleWrap.style.cssText = 'position: absolute; top: 6px; right: 6px; display: none; z-index: 10;';
       const btn = document.createElement('button');
       btn.className = 'pob-override-toggle';
       btn.style.cssText = 'background: rgba(0,0,0,0.85); border: 1px solid #c8b88a; color: #ebd592; padding: 2px 6px; font-size: 10px; cursor: pointer; border-radius: 2px; line-height: 14px; transition: opacity 0.2s;';
-
+      
       toggleWrap.appendChild(btn);
       pobWrap.appendChild(toggleWrap);
 
@@ -283,7 +283,7 @@
         toggleWrap.style.display = 'block';
       });
       pobWrap.addEventListener('mouseleave', () => toggleWrap.style.display = 'none');
-
+      
       btn.onclick = (ev) => {
         ev.stopPropagation();
         const dataId = node.getAttribute('data-id');
@@ -293,29 +293,29 @@
         } else {
           disabledOverridesByItem.add(dataId);
         }
-
+        
         const isDisabled = disabledOverridesByItem.has(dataId);
         btn.textContent = isDisabled ? '🪄 OFF' : '🪄 ON';
         btn.title = isDisabled ? 'Enable custom PoB Injector overrides for this item' : 'Disable custom PoB Injector overrides for this item';
         btn.style.opacity = isDisabled ? '0.5' : '1';
-
+        
         const previewEl = pobWrap.querySelector('.rune_preview');
         const impactEl = pobWrap.querySelector('.item_impact');
         if (previewEl) previewEl.style.opacity = '0.3';
         if (impactEl) impactEl.style.opacity = '0.3';
-
+        
         const meta = getItemMetaAndText(node);
         window.top.postMessage({
-          message: 'get_item_impact',
-          item: meta.text,
-          dataId,
-          sockets: meta.sockets,
-          maxSockets: meta.maxSockets,
-          runeSlots: meta.runeSlots,
-          itemTypeLabel: meta.itemTypeLabel,
-          canHaveQuality: meta.canHaveQuality,
-          isCorrupted: meta.isCorrupted,
-          skipOverrides: disabledOverridesByItem.has(dataId)
+           message: 'get_item_impact',
+           item: meta.text,
+           dataId,
+           sockets: meta.sockets,
+           maxSockets: meta.maxSockets,
+           runeSlots: meta.runeSlots,
+           itemTypeLabel: meta.itemTypeLabel,
+           canHaveQuality: meta.canHaveQuality,
+           isCorrupted: meta.isCorrupted,
+           skipOverrides: disabledOverridesByItem.has(dataId)
         }, '*');
       };
     }
@@ -350,11 +350,11 @@
           btn.dataset.originalText = btn.textContent;
           btn.textContent = 'Importing...';
           btn.disabled = true;
-
+          
           const meta = getItemMetaAndText(node.closest('.row[data-id]'));
-          window.top.postMessage({
-            message: 'import_item_to_pob',
-            dataId,
+          window.top.postMessage({ 
+            message: 'import_item_to_pob', 
+            dataId, 
             item: itemObj.itemText,
             sockets: meta.sockets,
             maxSockets: meta.maxSockets,
@@ -364,7 +364,7 @@
         }
       };
       importWrap.appendChild(btn);
-
+      
       if (pobWrap.nextSibling) {
         parent.insertBefore(importWrap, pobWrap.nextSibling);
       } else {
@@ -639,7 +639,7 @@
 
   window.addEventListener('message', e => {
     if (e.data.message == 'show_update_notification') {
-      showSortStatus('Update available! Click the update button in the extension panel', true);
+      showSortStatus('Update available! Click the green UPDATE button in the extension panel.', true);
       return;
     }
     if (e.data.message == 're_eval') {
@@ -699,8 +699,8 @@
       previewCache[e.data.dataId] = e.data.html || '';
       const preview = itemByDataId[e.data.dataId]?.preview;
       if (preview) {
-        preview.innerHTML = e.data.html || '';
-        preview.style.opacity = '1';
+         preview.innerHTML = e.data.html || '';
+         preview.style.opacity = '1';
       }
     } else if (e.data.message == 'toggle') {
       enabled = e.data.enabled;

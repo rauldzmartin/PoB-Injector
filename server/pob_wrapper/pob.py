@@ -134,7 +134,8 @@ class PathOfBuilding:
     def __init__(self, pob_path, pob_install, verbose=False):
         self.verbose = verbose and True
         if getattr(sys, 'frozen', False):
-            data_dir = os.path.join(sys._MEIPASS, 'pob_wrapper', 'data')
+            application_path = os.path.dirname(sys.executable)
+            data_dir = os.path.join(application_path, r'..\pob_wrapper\data')
         else:
             data_dir = importlib.resources.files('pob_wrapper').joinpath('data')
             
@@ -166,19 +167,9 @@ class PathOfBuilding:
         os.environ['POB_SCRIPTPATH'] = pob_path
         os.environ['POB_RUNTIMEPATH'] = pob_install
         
-        # FIX: PyInstaller puts its temp folder at the start of PATH, which can contain conflicting DLLs 
-        # (like zlib1.dll) that break lcurl.dll. Force pob_install to the absolute front of PATH.
-        os.environ['PATH'] = f"{pob_install}{os.pathsep}{os.environ.get('PATH', '')}"
-        
         print("DEBUG: data_dir =", data_dir)
         print("DEBUG: luajit path =", os.path.join(data_dir, 'luajit.exe'))
         print("DEBUG: cli.lua path =", os.path.join(data_dir, 'cli.lua'))
-        if getattr(sys, 'frozen', False):
-            try:
-                files = [f.name for f in os.scandir(data_dir)]
-                print("DEBUG: files in data_dir =", sorted(files))
-            except Exception as e:
-                print("DEBUG: failed to list data_dir:", e)
         print("DEBUG: cwd =", pob_path)
 
         self.pob = ProcessWrapper(debug=self.verbose)  #  Initialize first

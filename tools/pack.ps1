@@ -17,7 +17,7 @@ if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
 New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
 
 # Copy only indispensable files
-$requiredItems = @("extension", "server", "install.bat", "start.bat", "README.md")
+$requiredItems = @("extension", "pob_wrapper", "server", "install.bat", "start.bat", "README.md")
 foreach ($item in $requiredItems) {
     $src = Join-Path $root $item
     if (Test-Path $src) {

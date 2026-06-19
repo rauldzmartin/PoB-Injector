@@ -3,7 +3,7 @@ import os
 from subprocess import PIPE, STDOUT
 from typing import List
 
-from .popen_job import JobPopen as Popen
+from .popen_job import Popen
 
 __all__ = [
     'ProcessWrapper',
@@ -63,11 +63,8 @@ class ProcessWrapper:
         return result
 
     def kill(self):
-        if self.process is None:
-            return
         self.process.terminate()
-        self.process.wait(timeout=5)
-        self.process = None
+        self.process.wait()
 
     def get(self):
         line = self.process.stdout.readline()

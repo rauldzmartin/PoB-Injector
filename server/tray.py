@@ -146,6 +146,12 @@ def create_tray():
             time.sleep(2)
             icon.notify("PoB Injector updated successfully to the latest version!", "Update Complete")
         threading.Thread(target=show_update_notif, daemon=True).start()
+    elif "--update-failed" in sys.argv:
+        def show_fail_notif():
+            import time
+            time.sleep(2)
+            icon.notify("Update failed. Running previous version. Check updater.log for details.", "Update Failed")
+        threading.Thread(target=show_fail_notif, daemon=True).start()
         
     threading.Thread(target=monitor_server, args=(icon,), daemon=True).start()
     icon.run()
@@ -153,11 +159,14 @@ def create_tray():
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     
-    # Clean up old executable from updates
+    # Clean up old executable from updates (keep for 24h as backup)
     if getattr(sys, 'frozen', False):
         old_exe = sys.executable + ".old"
         if os.path.exists(old_exe):
-            try: os.remove(old_exe)
+            try:
+                age = time.time() - os.path.getmtime(old_exe)
+                if age > 24 * 3600:  # Older than 24 hours
+                    os.remove(old_exe)
             except Exception: pass
     
     # Route to updater if called by the update endpoint

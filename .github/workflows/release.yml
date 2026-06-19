@@ -5,67 +5,26 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: write
-
 jobs:
-  build-release:
-    runs-on: windows-latest
+  build-zip:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Dependencies
-        env:
-          PYINSTALLER_COMPILE_BOOTLOADER: 1
+      - name: Make zip
         run: |
-          python -m pip install --upgrade pip
-          pip install -r server/requirements.txt
-          pip install pillow
-          pip install --no-binary pyinstaller pyinstaller
+          bash tools/pack.sh
+        shell: bash
 
-      - name: Build Executable
-        run: |
-          python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
-          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" server\tray.py
-
-      - name: List Bundled Data (diagnostics)
-        run: |
-          echo "=== Files in server/pob_wrapper/data ==="
-          Get-ChildItem -Recurse server/pob_wrapper/data
-        shell: pwsh
-
-      - name: Package Release
-        run: |
-          $MANIFEST = Get-Content extension\manifest.json | ConvertFrom-Json
-          $VERSION = $MANIFEST.version_name
-          if (-not $VERSION) { $VERSION = $MANIFEST.version }
-          $ZIP_NAME = "PoB_Injector_Release_v$VERSION.zip"
-          
-          New-Item -ItemType Directory -Force -Path dist_temp\PoB-Injector
-          Copy-Item dist\PoB-Injector.exe -Destination dist_temp\PoB-Injector\
-          Copy-Item extension -Destination dist_temp\PoB-Injector\extension -Recurse
-          Copy-Item README.md -Destination dist_temp\PoB-Injector\
-          
-          Compress-Archive -Path dist_temp\PoB-Injector -DestinationPath dist\$ZIP_NAME
-        shell: powershell
-
-      - name: Build UserScript
-        run: python tools/build_userscript.py
-
-      - name: Upload artifacts
+      - name: Upload zip as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-files
-          path: dist
+          name: extension-zip
+          path: dist/*.zip
 
   create-release:
-    needs: build-release
+    needs: build-zip
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -74,14 +33,12 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: release-files
+          name: extension-zip
           path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/*.zip
-            dist/pob-injector.user.js
+          files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

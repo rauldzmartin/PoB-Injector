@@ -10,10 +10,7 @@
     async checkStatus() {
       try {
         const res = await fetch(`${this.base}/status`);
-        if (!res.ok) return false;
-        const data = await res.json();
-        this.serverVersion = data.version;
-        return true;
+        return res.ok;
       } catch {
         return false;
       }
@@ -68,8 +65,8 @@
       }
     },
     async listRunes(slotsCsv = '') {
-      const qs = slotsCsv && slotsCsv.trim() ? `?slot=${encodeURIComponent(slotsCsv)}` : '';
-      const res = await fetch(`${this.base}/runes${qs}`);
+      if (!slotsCsv || !slotsCsv.trim()) return []; // no runes for this type
+      const res = await fetch(`${this.base}/runes?slot=${encodeURIComponent(slotsCsv)}`);
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -121,13 +118,12 @@
   }
   async function ensureRunesFor(slotsCsv) {
     const key = normSlotsCsv(slotsCsv || '');
+    if (!key) { RUNE_CACHE.set('', []); return []; }
     if (RUNE_CACHE.has(key)) return RUNE_CACHE.get(key);
     const list = await API.listRunes(key);
     const out = Array.isArray(list) ? list : Object.values(list || {}).flat();
-    const uniqueOut = [...new Set(out)];
-    uniqueOut.sort((a,b) => a.localeCompare(b));
-    RUNE_CACHE.set(key, uniqueOut);
-    return uniqueOut;
+    RUNE_CACHE.set(key, out);
+    return out;
   }
   function normRuneText(s) { return (s || '').replace(/\s*\(rune\)\s*$/i, '').trim().toLowerCase(); }
   function endsWithRune(s) { return /\(rune\)\s*$/i.test(s); }
@@ -662,15 +658,8 @@
     updateBtn.textContent = 'UPDATE';
     updateBtn.title = 'A new version is available! Click to update.';
     updateBtn.className = 'pob-btn pob-glow';
-    updateBtn.style.cssText = 'display:none; margin-left: 8px; border-color: #4caf50 !important; color: #81c784 !important; font-weight: bold; padding: 4px 12px;';
+    updateBtn.style.cssText = 'display:none; margin-left: 8px; border-color: #4caf50; color: #81c784; font-weight: bold; padding: 4px 12px;';
     updateBtn.onclick = async () => {
-      const isUserscript = typeof GM_info !== 'undefined';
-      if (isUserscript) {
-        window.open('https://github.com/rauldzmartin/PoB-Injector/releases/latest/download/pob-injector.user.js', '_blank');
-        updateBtn.style.display = 'none';
-        return;
-      }
-
       updateBtn.textContent = 'UPDATING...';
       updateBtn.disabled = true;
       updateBtn.classList.remove('pob-glow');
@@ -716,22 +705,13 @@
 
     navbar.append(onBtn, offBtn, spacer, statusMsg, applyBtn, updateBtn, settingsBtn);
 
-    const checkUpdateVisibility = async () => {
-      const hasUpdate = await API.checkUpdate();
-      const manifest = chrome.runtime.getManifest();
-      const extVersion = manifest.version_name || manifest.version;
-      
-      const serverIsNewer = API.serverVersion && extVersion && API.serverVersion !== extVersion;
-      
-      if ((hasUpdate || serverIsNewer) && updateBtn.style.display === 'none') {
-        updateBtn.style.display = 'block';
-        window.top.postMessage({ message: 'show_update_notification' }, '*');
-      }
-    };
-
     setInterval(async () => {
       if (serverOnline) {
-        await checkUpdateVisibility();
+        const hasUpdate = await API.checkUpdate();
+        if (hasUpdate && updateBtn.style.display === 'none') {
+          updateBtn.style.display = 'block';
+          window.top.postMessage({ message: 'show_update_notification' }, '*');
+        }
       }
     }, 3 * 60 * 1000);
 
@@ -752,8 +732,11 @@
           }
           await API.loadPoB(cfg.activeBuild || null);
           injectCode();
-          if (typeof loadEnchantsToUI === 'function') loadEnchantsToUI();
-          await checkUpdateVisibility();
+          const hasUpdate = await API.checkUpdate();
+          if (hasUpdate) {
+            updateBtn.style.display = 'block';
+            window.top.postMessage({ message: 'show_update_notification' }, '*');
+          }
         } catch (e) {
           console.error(e);
         }
@@ -780,11 +763,9 @@
 
     const typeLbl = document.createElement('div');
     typeLbl.id = 'pob-type-label';
-    typeLbl.className = 'pob-section-title';
-    typeLbl.style.display = 'none';
-    typeLbl.style.marginTop = '4px';
+    typeLbl.className = 'pob-type';
     typeLbl.style.marginBottom = '8px';
-    typeLbl.textContent = '';
+    typeLbl.textContent = '\u2014';
 
     const buildSelect = document.createElement('select');
     buildSelect.title = 'Select active build';
@@ -793,7 +774,7 @@
     let isReloadingBuild = false;
     const reloadActiveBuild = async () => {
       if (isReloadingBuild) return;
-      if (buildSelect.value === cfg.activeBuild || (!cfg.activeBuild && buildSelect.value === buildSelect.options[0]?.value)) {
+      if (buildSelect.value === cfg.activeBuild) {
         isDropdownOpen = false;
         return;
       }
@@ -927,14 +908,10 @@
     refreshBtn.className = 'pob-icon-btn'; refreshBtn.innerHTML = '\u21bb'; refreshBtn.title = 'Reload runes for current item type';
     refreshBtn.onclick = async () => {
       refreshBtn.disabled = true;
-      runeDatalist.innerHTML = '<option disabled>Loading\u2026</option>';
       try {
         currentRuneList = await ensureRunesFor(cfg.lastSlotsCsv || '');
         runeDatalist.innerHTML = '';
         for (const m of currentRuneList) { const o = document.createElement('option'); o.value = m; runeDatalist.append(o); }
-      } catch {
-        currentRuneList = [];
-        runeDatalist.innerHTML = '<option disabled style="color:#c66">\u26a0 Server unreachable</option>';
       } finally { refreshBtn.disabled = false; }
     };
 
@@ -1081,7 +1058,6 @@
         for (const m of list) { 
           const o = document.createElement('option'); 
           o.value = m.text.replace(/^Allocates\s+/i, ''); 
-          o.textContent = o.value;
           enchDatalist.append(o); 
         }
       } catch (e) {}
@@ -1119,54 +1095,14 @@
       cfg.useDevBranch = v;
       saveCfg();
     });
-
-    const checkUpdateBtnRow = document.createElement('div');
-    checkUpdateBtnRow.style.cssText = 'display:flex; margin-top: 4px;';
-    const forceUpdateBtn = document.createElement('button');
-    forceUpdateBtn.textContent = 'Check for Updates';
-    forceUpdateBtn.className = 'pob-btn';
-    forceUpdateBtn.style.cssText = 'width: 100%;';
-    
-    forceUpdateBtn.onclick = async () => {
-      const originalText = forceUpdateBtn.textContent;
-      forceUpdateBtn.textContent = 'Checking...';
-      forceUpdateBtn.disabled = true;
-      try {
-        const hasUpdate = await API.checkUpdate();
-        if (hasUpdate) {
-          forceUpdateBtn.textContent = 'Update Available!';
-          forceUpdateBtn.style.borderColor = '#4caf50';
-          forceUpdateBtn.style.color = '#81c784';
-          if (typeof updateBtn !== 'undefined') updateBtn.style.display = 'block';
-          window.top.postMessage({ message: 'show_update_notification' }, '*');
-        } else {
-          forceUpdateBtn.textContent = 'Up to date';
-        }
-      } catch (e) {
-        forceUpdateBtn.textContent = 'Error checking';
-      }
-      setTimeout(() => {
-        forceUpdateBtn.textContent = originalText;
-        forceUpdateBtn.disabled = false;
-        forceUpdateBtn.style.borderColor = '';
-        forceUpdateBtn.style.color = '';
-      }, 3000);
-    };
-    checkUpdateBtnRow.append(forceUpdateBtn);
     
     const settingsInner = document.createElement('div');
     settingsInner.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-top:4px; margin-left:6px; margin-bottom: 12px;';
-    settingsInner.append(devOptIn.row, checkUpdateBtnRow);
+    settingsInner.append(devOptIn.row);
     
     const settingsBlock = makeSection('Updates', null, settingsInner);
     settingsBlock.id = 'pob-settings-block';
-    
-    const versionLbl = document.createElement('div');
-    versionLbl.style.cssText = 'font-size: 10px; color: #5a4d3a; text-align: right; margin-top: 4px; padding-right: 4px;';
-    const manifest = chrome.runtime.getManifest();
-    versionLbl.textContent = 'v' + (manifest.version_name || manifest.version);
-    
-    settingsContent.append(settingsBlock, versionLbl);
+    settingsContent.append(settingsBlock);
     
     content.append(innerContent, settingsContent, offlineOverlay);
     body.append(navbar, content);
@@ -1191,6 +1127,7 @@
         const maxSockets = Number(e.data.maxSockets || 0) || 0;
         const runeslots = (e.data.runeSlots || '');
         const typeLabel = e.data.itemTypeLabel || (runeslots || '—');
+        cfg.lastSlotsCsv = runeslots;
 
         // Update section visibility based on item capabilities
         currentItemHasSockets = maxSockets > 0;
@@ -1200,10 +1137,7 @@
         updateSectionVisibility();
 
         const t = document.getElementById('pob-type-label');
-        if (t) {
-          t.textContent = 'Settings for: ' + typeLabel;
-          t.style.display = 'block';
-        }
+        if (t) t.textContent = 'Current item type: ' + typeLabel;
 
         if (cfg.activeItemTypeLabel !== typeLabel) {
           if (!cfg.savedRunes) cfg.savedRunes = {};
@@ -1250,23 +1184,18 @@
         }
         window.lastPobItemTypeLabel = typeLabel;
 
-        if (cfg.lastSlotsCsv !== runeslots || !document.getElementById('pob-runes-list')?.children.length) {
-          cfg.lastSlotsCsv = runeslots;
+        try {
+          currentRuneList = await ensureRunesFor(runeslots);
           const dl = document.getElementById('pob-runes-list');
-          if (dl) dl.innerHTML = '<option disabled>Loading\u2026</option>';
-          try {
-            currentRuneList = await ensureRunesFor(runeslots);
-            if (dl) {
-              dl.innerHTML = '';
-              for (const m of currentRuneList) {
-                const o = document.createElement('option'); o.value = m; o.textContent = m;
-                dl.append(o);
-              }
+          if (dl) {
+            dl.innerHTML = '';
+            for (const m of currentRuneList) {
+              const o = document.createElement('option'); o.value = m; o.textContent = m;
+              dl.append(o);
             }
-          } catch {
-            currentRuneList = [];
-            if (dl) dl.innerHTML = '<option disabled style="color:#c66">\u26a0 Server unreachable</option>';
           }
+        } catch {
+          currentRuneList = [];
         }
 
         let itemTextAfter = e.data.item;

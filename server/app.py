@@ -8,20 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from dotenv import load_dotenv
-if getattr(sys, 'frozen', False):
-    load_dotenv(os.path.join(os.path.dirname(sys.executable), ".env"))
-else:
-    load_dotenv()
-
-import ctypes
-if "POB_CONSOLE_TITLE" in os.environ:
-    ctypes.windll.kernel32.SetConsoleTitleW(os.environ["POB_CONSOLE_TITLE"])
+load_dotenv()
 
 POB_INSTALL_ENV = os.getenv("POB_INSTALL")
 
 def _find_pob_install() -> str:
     # 1. Check from .env
-    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "Launch.lua")):
+    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "lua", "init.lua")):
         return POB_INSTALL_ENV
 
     # 2. Check if PoB is running
@@ -32,7 +25,7 @@ def _find_pob_install() -> str:
             if p.Name and p.Name.lower() == 'path of building.exe':
                 if p.ExecutablePath:
                     pob_dir = os.path.dirname(p.ExecutablePath)
-                    if os.path.exists(os.path.join(pob_dir, "Launch.lua")):
+                    if os.path.exists(os.path.join(pob_dir, "lua", "init.lua")):
                         return pob_dir
     except Exception as e:
         print(f"Error checking WMI for running PoB: {e}")
@@ -41,37 +34,16 @@ def _find_pob_install() -> str:
     common = [
         r"C:\ProgramData\Path of Building Community",
         os.path.expandvars(r"%APPDATA%\Path of Building Community"),
-        os.path.expandvars(r"%APPDATA%\Path of Building Community (PoE2)"),
         os.path.expandvars(r"%PROGRAMDATA%\Path of Building Community"),
         os.path.expandvars(r"%LOCALAPPDATA%\Path of Building Community"),
         os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community")
     ]
     for p in common:
-        if os.path.exists(os.path.join(p, "Launch.lua")):
+        if os.path.exists(os.path.join(p, "lua", "init.lua")):
             return p
 
-    # Fallback - If we reached here, no valid path was found.
-    # If there was an invalid path in .env, ignore it.
-    if getattr(sys, 'frozen', False):
-        import tkinter as tk
-        from tkinter import filedialog, messagebox
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        messagebox.showinfo("PoB Injector", "Could not automatically locate Path of Building.\nPlease select the folder where 'Path of Building Community' is installed.")
-        folder = filedialog.askdirectory(title="Select Path of Building folder")
-        if folder and os.path.exists(os.path.join(folder, "Launch.lua")):
-            env_path = os.path.join(os.path.dirname(sys.executable), ".env")
-            try:
-                with open(env_path, "w") as f:
-                    f.write(f'POB_INSTALL="{folder}"\n')
-            except:
-                pass
-            return folder
-        else:
-            messagebox.showerror("Error", "The selected folder does not appear to contain Path of Building. The injector will now close.")
-            sys.exit(1)
-    return ""
+    # Fallback
+    return POB_INSTALL_ENV if POB_INSTALL_ENV else ""
 
 POB_INSTALL = _find_pob_install()
 POB_PATH    = os.getenv("POB_PATH", POB_INSTALL)
@@ -97,49 +69,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(
-    title="PoB Injector Server",
-    description="Servidor local para PoB Injector que interacciona con Path of Building de forma headless.",
-    version="0.6.24-beta",
-)
-
-import logging
-
-class AccessFormatter(logging.Formatter):
-    def format(self, record):
-        if len(record.args) == 5:
-            record.msg = '"%s %s HTTP/%s" %d'
-            record.args = (record.args[1], record.args[2], record.args[3], record.args[4])
-        return super().format(record)
-
-def setup_logging():
-    formatter = logging.Formatter(f"[v{app.version}] %(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S")
-    acc_formatter = AccessFormatter(f"[v{app.version}] %(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S")
-    
-    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
-        logger = logging.getLogger(name)
-        for handler in logger.handlers:
-            if name == "uvicorn.access":
-                handler.setFormatter(acc_formatter)
-            else:
-                handler.setFormatter(formatter)
-
-@app.on_event("startup")
-async def startup_event():
-    setup_logging()
-    print(f"\n======================================")
-    print(f"  PoB Injector Server v{app.version}")
-    print(f"======================================\n")
-    logger = logging.getLogger("uvicorn")
-    logger.info(f"PoB Installation path: {POB_INSTALL}")
-    try:
-        pob = _ensure_pob()
-        builds_path = pob.get_builds_dir()
-        if builds_path and not os.path.isabs(builds_path):
-            builds_path = os.path.join(POB_INSTALL, builds_path)
-        logger.info(f"PoB Builds path: {os.path.normpath(builds_path)}")
-    except Exception as e:
-        logger.info(f"PoB Builds path: (Unable to determine: {e})")
+app = FastAPI(title="PoB HTTP API", version="0.5g")
 
 app.add_middleware(
     CORSMiddleware,
@@ -163,15 +93,6 @@ def _ensure_pob():
     global _pob
     if _import_error:
         raise HTTPException(status_code=500, detail=f"Failed to import pob_wrapper: {_import_error}")
-    
-    if _pob is not None:
-        try:
-            if _pob.pob.process.poll() is not None:
-                print("PoB subprocess died, restarting...")
-                _pob = None
-        except Exception:
-            _pob = None
-            
     if _pob is None:
         _pob = PathOfBuilding(pob_path=POB_PATH, pob_install=POB_INSTALL, verbose=True)  # type: ignore
     return _pob
@@ -187,69 +108,42 @@ def _try_b64(s: str) -> str:
 
 @app.get("/status")
 def status():
-    return {"running": _pob is not None, "import_error": str(_import_error) if _import_error else None, "version": app.version}
+    return {"running": _pob is not None, "import_error": str(_import_error) if _import_error else None}
 
 GITHUB_REPO = os.getenv("GITHUB_REPO", "rauldzmartin/PoB-Injector")
 
 @app.get("/check-update")
 def check_update(branch: str = "main"):
     try:
-        import urllib.request, json, time
-        
-        local_version = app.version
-        
-        if getattr(sys, 'frozen', False):
-            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest?t={int(time.time())}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status == 200:
-                    release_data = json.loads(resp.read().decode('utf-8'))
-                    remote_version = release_data.get("tag_name", "").lstrip("v")
-                    if remote_version and local_version and remote_version != local_version:
-                        return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
-                    return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
-        else:
-            timestamp = int(time.time())
-            url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json?t={timestamp}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status == 200:
-                    remote_manifest = json.loads(resp.read().decode('utf-8'))
-                    remote_version = remote_manifest.get("version_name", "")
+        import requests, json
+        url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{branch}/extension/manifest.json"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            remote_manifest = resp.json()
+            remote_version = remote_manifest.get("version_name", "")
+            
+            local_manifest_path = os.path.join(REPO_ROOT, "extension", "manifest.json")
+            local_version = ""
+            if os.path.exists(local_manifest_path):
+                with open(local_manifest_path, "r", encoding="utf-8") as f:
+                    local_manifest = json.load(f)
+                    local_version = local_manifest.get("version_name", "")
                     
-                    if remote_version and local_version and remote_version != local_version:
-                        return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
-                    return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
-        return {"update_available": False, "error": "Could not check update"}
+            if remote_version and local_version and remote_version != local_version:
+                return {"update_available": True, "remote_version": remote_version, "local_version": local_version}
+            return {"update_available": False, "remote_version": remote_version, "local_version": local_version}
+        return {"update_available": False, "error": f"HTTP {resp.status_code}"}
     except Exception as e:
         return {"update_available": False, "error": str(e)}
 
 @app.post("/update")
-def update(branch: str = "main", version: str = ""):
+def update(branch: str = "main"):
     import subprocess
     updater_path = os.path.join(HERE, "updater.py")
     
-    if getattr(sys, 'frozen', False) and not version:
-        res = check_update(branch)
-        version = res.get("remote_version", "")
-        
-    if version and version == app.version:
-        return {"status": "already_updated"}
-    
-    python_exe = sys.executable
-    if "uvicorn" in python_exe.lower():
-        python_exe = os.path.join(os.path.dirname(python_exe), "python.exe")
-        if not os.path.exists(python_exe):
-            python_exe = "python"
-            
     # Spawn updater in a new console so it survives
-    CREATE_NO_WINDOW = 0x08000000
-    subprocess.Popen([python_exe, updater_path, "rauldzmartin/PoB-Injector", branch, version], 
-                     cwd=HERE, 
-                     creationflags=CREATE_NO_WINDOW,
-                     stdin=subprocess.DEVNULL,
-                     stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL)
+    creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
+    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, branch], cwd=HERE, creationflags=creation_flags)
     
     # Gracefully kill uvicorn
     def kill_me():
@@ -260,41 +154,28 @@ def update(branch: str = "main", version: str = ""):
     return {"status": "updating"}
 
 def _get_active_build() -> str:
-    possible_settings_paths = [os.path.join(POB_INSTALL, "Settings.xml")]
-    builds_dir = ""
-    
-    try:
-        pob = _ensure_pob()
-        b_dir = pob.get_builds_dir()
-        if b_dir and not os.path.isabs(b_dir):
-            b_dir = os.path.normpath(os.path.join(POB_INSTALL, b_dir))
-        builds_dir = b_dir
-        if builds_dir:
-            possible_settings_paths.insert(0, os.path.join(os.path.dirname(builds_dir), "Settings.xml"))
-    except Exception:
-        builds_dir = os.path.join(POB_INSTALL, "Builds")
-        
-    for settings_path in possible_settings_paths:
-        if os.path.exists(settings_path):
-            try:
-                import xml.etree.ElementTree as ET
-                tree = ET.parse(settings_path)
-                root = tree.getroot()
-                mode = root.find("./Mode[@mode='BUILD']")
-                if mode is not None:
-                    for arg in mode.findall("./Arg"):
-                        if 'string' in arg.attrib:
-                            build_path = arg.attrib['string']
-                            if not os.path.isabs(build_path):
-                                build_path = os.path.join(builds_dir, build_path)
+    settings_path = os.path.join(POB_INSTALL, "Settings.xml")
+    if os.path.exists(settings_path):
+        try:
+            import xml.etree.ElementTree as ET
+            tree = ET.parse(settings_path)
+            root = tree.getroot()
+            mode = root.find("./Mode[@mode='BUILD']")
+            if mode is not None:
+                for arg in mode.findall("./Arg"):
+                    if 'string' in arg.attrib:
+                        build_path = arg.attrib['string']
+                        if not os.path.isabs(build_path):
+                            build_path = os.path.join(POB_INSTALL, "Builds", build_path)
                             if not build_path.endswith(".xml"):
                                 build_path += ".xml"
-                            if os.path.exists(build_path):
-                                return build_path
-            except Exception as e:
-                print(f"Error parsing Settings.xml at {settings_path}: {e}")
-
-    if builds_dir and os.path.exists(builds_dir):
+                        if os.path.exists(build_path):
+                            return build_path
+        except Exception as e:
+            print(f"Error parsing Settings.xml: {e}")
+            
+    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    if os.path.exists(builds_dir):
         for root_dir, dirs, files in os.walk(builds_dir):
             for file in files:
                 if file.lower().endswith(".xml"):
@@ -324,16 +205,9 @@ def load_pob(req: LoadReq):
         else:
             build = _try_b64(build)
             if not os.path.isabs(build):
-                b_dir = pob.get_builds_dir()
-                if b_dir and not os.path.isabs(b_dir):
-                    b_dir = os.path.join(POB_INSTALL, b_dir)
-                build = os.path.join(b_dir, build)
+                build = os.path.join(POB_INSTALL, "Builds", build)
                 if not build.endswith(".xml"):
                     build += ".xml"
-                    
-        if not build:
-            raise HTTPException(status_code=400, detail="No active build found in PoB, and no build path was provided.")
-            
         try:
             pob.load_build(build)
             _loaded_build_path = build
@@ -345,16 +219,7 @@ def load_pob(req: LoadReq):
 
 @app.get("/builds")
 def list_builds():
-    try:
-        with _lock:
-            pob = _ensure_pob()
-            builds_dir = pob.get_builds_dir()
-    except Exception:
-        builds_dir = "Builds"
-        
-    if builds_dir and not os.path.isabs(builds_dir):
-        builds_dir = os.path.join(POB_INSTALL, builds_dir)
-        
+    builds_dir = os.path.join(POB_INSTALL, "Builds")
     if not os.path.exists(builds_dir):
         return []
     
