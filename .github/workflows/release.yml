@@ -5,26 +5,130 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write
+
 jobs:
-  build-zip:
-    runs-on: ubuntu-latest
+  build-release:
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make zip
+      - name: Validate Version Consistency
         run: |
-          bash tools/pack.sh
-        shell: bash
+          $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
+          $MANIFEST = Get-Content extension\manifest.json | ConvertFrom-Json
+          $MANIFEST_VERSION = $MANIFEST.version_name
+          
+          Write-Host "Tag version: $TAG_VERSION"
+          Write-Host "Manifest version: $MANIFEST_VERSION"
+          
+          if ($TAG_VERSION -ne $MANIFEST_VERSION) {
+            Write-Error "VERSION MISMATCH! Tag: v$TAG_VERSION, Manifest: $MANIFEST_VERSION"
+            Write-Error "Please update extension/manifest.json to match the tag version"
+            exit 1
+          }
+          
+          Write-Host "[OK] Version consistency check passed: $TAG_VERSION"
+        shell: pwsh
 
-      - name: Upload zip as artifact
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        env:
+          PYINSTALLER_COMPILE_BOOTLOADER: 1
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt
+          pip install pillow
+          pip install --no-binary pyinstaller pyinstaller
+
+      - name: Build Executable
+        run: |
+          python -c "from PIL import Image; img = Image.open('extension/img/icon-128.png'); img.save('extension/img/icon.ico', format='ICO')"
+          pyinstaller --name "PoB-Injector" --onefile --noconsole --icon "extension\img\icon.ico" --add-data "server\pob_wrapper\data;pob_wrapper\data" --add-data "server\pob_wrapper\data\commands.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\cli.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\mockui.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\pobinterface.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\inspect.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\dkjson.lua;pob_wrapper\data" --add-data "server\pob_wrapper\data\luajit.exe;pob_wrapper\data" --add-data "server\pob_wrapper\data\lua51.dll;pob_wrapper\data" --add-data "extension\img;extension\img" --add-data "extension\manifest.json;extension" server\tray.py
+
+      - name: List Bundled Data (diagnostics)
+        run: |
+          echo "=== Files in server/pob_wrapper/data ==="
+          Get-ChildItem -Recurse server/pob_wrapper/data
+        shell: pwsh
+
+      - name: Package Release
+        run: |
+          # Use tag version for consistency (already validated to match manifest)
+          $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
+          $ZIP_NAME = "PoB_Injector_Release_v$TAG_VERSION.zip"
+          
+          Write-Host "Creating release package: $ZIP_NAME"
+          
+          New-Item -ItemType Directory -Force -Path dist_temp\PoB-Injector
+          Copy-Item dist\PoB-Injector.exe -Destination dist_temp\PoB-Injector\
+          Copy-Item extension -Destination dist_temp\PoB-Injector\extension -Recurse
+          Copy-Item README.md -Destination dist_temp\PoB-Injector\
+          
+          Compress-Archive -Path dist_temp\PoB-Injector -DestinationPath dist\$ZIP_NAME
+          
+          Write-Host "[OK] Release package created: $ZIP_NAME"
+        shell: powershell
+
+      - name: Verify Release Package
+        run: |
+          $TAG_VERSION = "${{ github.ref_name }}" -replace '^v', ''
+          $ZIP_NAME = "PoB_Injector_Release_v$TAG_VERSION.zip"
+          $ZIP_PATH = "dist\$ZIP_NAME"
+          
+          if (-not (Test-Path $ZIP_PATH)) {
+            Write-Error "ERROR: Expected ZIP not found: $ZIP_NAME"
+            exit 1
+          }
+          
+          Write-Host "Verifying ZIP contents..."
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($ZIP_PATH)
+          
+          $hasExe = $zip.Entries | Where-Object { $_.Name -eq "PoB-Injector.exe" }
+          $hasExtension = $zip.Entries | Where-Object { $_.FullName -like "*/extension/*" }
+          $hasReadme = $zip.Entries | Where-Object { $_.Name -eq "README.md" }
+          
+          $zip.Dispose()
+          
+          if (-not $hasExe) {
+            Write-Error "ERROR: ZIP doesn't contain PoB-Injector.exe"
+            exit 1
+          }
+          
+          if (-not $hasExtension) {
+            Write-Error "ERROR: ZIP doesn't contain extension folder"
+            exit 1
+          }
+          
+          if (-not $hasReadme) {
+            Write-Error "ERROR: ZIP doesn't contain README.md"
+            exit 1
+          }
+          
+          $zipSize = (Get-Item $ZIP_PATH).Length / 1MB
+          Write-Host "[OK] Release package verified successfully"
+          Write-Host "  Size: $([math]::Round($zipSize, 2)) MB"
+          Write-Host "  Contains: PoB-Injector.exe, extension/, README.md"
+        shell: pwsh
+
+      - name: Build UserScript
+        run: python tools/build_userscript.py
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: extension-zip
-          path: dist/*.zip
+          name: release-files
+          path: dist
 
   create-release:
-    needs: build-zip
+    needs: build-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,12 +137,27 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: extension-zip
+          name: release-files
           path: dist
+
+      - name: Detect Release Type
+        id: release_type
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" =~ -beta|-rc|-alpha ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "This is a pre-release: $TAG"
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "This is a stable release: $TAG"
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
+          files: |
+            dist/*.zip
+            dist/pob-injector.user.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
