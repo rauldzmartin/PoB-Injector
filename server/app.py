@@ -14,7 +14,7 @@ POB_INSTALL_ENV = os.getenv("POB_INSTALL")
 
 def _find_pob_install() -> str:
     # 1. Check from .env
-    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "lua", "init.lua")):
+    if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "Launch.lua")):
         return POB_INSTALL_ENV
 
     # 2. Check if PoB is running
@@ -22,10 +22,10 @@ def _find_pob_install() -> str:
         import win32com.client
         wmi = win32com.client.GetObject('winmgmts:')
         for p in wmi.InstancesOf('win32_process'):
-            if p.Name and p.Name.lower() == 'path of building.exe':
+            if p.Name and ('path of building' in p.Name.lower()):
                 if p.ExecutablePath:
                     pob_dir = os.path.dirname(p.ExecutablePath)
-                    if os.path.exists(os.path.join(pob_dir, "lua", "init.lua")):
+                    if os.path.exists(os.path.join(pob_dir, "Launch.lua")):
                         return pob_dir
     except Exception as e:
         print(f"Error checking WMI for running PoB: {e}")
@@ -44,7 +44,7 @@ def _find_pob_install() -> str:
         os.path.expandvars(r"%USERPROFILE%\Desktop\Path of Building Community (PoE2)")
     ]
     for p in common:
-        if os.path.exists(os.path.join(p, "lua", "init.lua")):
+        if os.path.exists(os.path.join(p, "Launch.lua")):
             return p
 
     # Fallback
@@ -82,7 +82,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.29-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.30-beta")
 
 app.add_middleware(
     CORSMiddleware,
