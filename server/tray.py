@@ -199,6 +199,63 @@ if __name__ == "__main__":
         sys.argv.pop(1)
         updater.main()
         sys.exit(0)
+    
+    # CLI flag: --update (for testing/automation)
+    if "--update" in sys.argv:
+        print("CLI Update Mode: Starting server and triggering update...")
+        start_server()
+        
+        # Wait for server to be ready
+        import urllib.request
+        for i in range(30):
+            try:
+                urllib.request.urlopen("http://127.0.0.1:5000/status", timeout=1)
+                print("[OK] Server ready")
+                break
+            except:
+                time.sleep(0.5)
+        else:
+            print("[ERROR] Server didn't start in time")
+            sys.exit(1)
+        
+        # Get update channel from --channel flag or default to dev
+        channel = "dev"
+        if "--channel" in sys.argv:
+            idx = sys.argv.index("--channel")
+            if idx + 1 < len(sys.argv):
+                channel = sys.argv[idx + 1]
+        
+        print(f"[INFO] Checking for updates on channel: {channel}")
+        
+        # Check for updates
+        try:
+            req_check = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={channel}")
+            with urllib.request.urlopen(req_check) as response:
+                data = json.loads(response.read().decode())
+            
+            if data.get("update_available"):
+                version = data.get("remote_version", "")
+                print(f"[INFO] Update available: {version}")
+                print(f"[INFO] Triggering update...")
+                
+                # Trigger update
+                req_update = urllib.request.Request(
+                    f"http://127.0.0.1:5000/update?branch={channel}&version={version}",
+                    method="POST"
+                )
+                urllib.request.urlopen(req_update)
+                print("[OK] Update triggered, server will shut down and updater will start")
+                print("[INFO] Check updater.log for details")
+            else:
+                print(f"[INFO] Already on latest version: {data.get('local_version', 'unknown')}")
+                sys.exit(0)
+        except Exception as e:
+            print(f"[ERROR] Update failed: {e}")
+            sys.exit(1)
+        
+        # Keep process alive until updater takes over
+        time.sleep(5)
+        sys.exit(0)
         
     start_server()
     create_tray()
