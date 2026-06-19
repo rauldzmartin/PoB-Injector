@@ -28,35 +28,15 @@ Write-Host "Target version: {version}"
 Write-Host "Installation directory: {exe_dir}"
 Write-Host ""
 
-# Step 1: Wait for main process to exit
-Write-Host "[Step 1/6] Waiting for main process to exit..."
-$processName = "PoB-Injector"
-$maxWait = 10
-$waited = 0
-while ($waited -lt $maxWait) {{
-    $proc = Get-Process -Name $processName -ErrorAction SilentlyContinue
-    if ($null -eq $proc) {{
-        Write-Host "[OK] Process exited"
-        break
-    }}
-    Start-Sleep -Seconds 1
-    $waited++
-}}
-if ($waited -ge $maxWait) {{
-    Write-Host "[WARNING] Process still running, forcing shutdown..."
-    Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
-}}
-
-# Step 2: Download release ZIP
-Write-Host ""
-Write-Host "[Step 2/6] Downloading update..."
+# Step 1: Download release ZIP
+Write-Host "[Step 1/7] Downloading update..."
 $zipPath = Join-Path $env:TEMP "pob_injector_update_{version}.zip"
 $extractPath = Join-Path $env:TEMP "pob_injector_update_{version}_extracted"
 
 try {{
     Invoke-WebRequest -Uri "{zip_url}" -OutFile $zipPath -UserAgent "PoB-Injector-Updater/2.0"
-    Write-Host "[OK] Downloaded: $((Get-Item $zipPath).Length / 1MB) MB"
+    $zipSize = (Get-Item $zipPath).Length / 1MB
+    Write-Host "[OK] Downloaded: $([math]::Round($zipSize, 2)) MB"
 }} catch {{
     Write-Host "[ERROR] Download failed: $_"
     Write-Host ""
@@ -65,9 +45,9 @@ try {{
     exit 1
 }}
 
-# Step 3: Extract ZIP
+# Step 2: Extract ZIP
 Write-Host ""
-Write-Host "[Step 3/6] Extracting update..."
+Write-Host "[Step 2/7] Extracting update..."
 try {{
     if (Test-Path $extractPath) {{
         Remove-Item $extractPath -Recurse -Force
@@ -82,24 +62,52 @@ try {{
     exit 1
 }}
 
+# Step 3: Force close main process
+Write-Host ""
+Write-Host "[Step 3/7] Closing main process..."
+$processName = "PoB-Injector"
+try {{
+    $procs = Get-Process -Name $processName -ErrorAction SilentlyContinue
+    if ($procs) {{
+        $procs | Stop-Process -Force
+        Write-Host "[OK] Process terminated"
+    }} else {{
+        Write-Host "[OK] Process already stopped"
+    }}
+}} catch {{
+    Write-Host "[WARNING] Could not stop process: $_"
+}}
+
+# Wait for Windows to release file locks
+Write-Host "[INFO] Waiting for file locks to release..."
+Start-Sleep -Seconds 3
+
 # Step 4: Backup current exe
 Write-Host ""
-Write-Host "[Step 4/6] Backing up current installation..."
+Write-Host "[Step 4/7] Backing up current installation..."
 $exePath = "{exe_path}"
 $backupPath = "$exePath.old"
 try {{
-    if (Test-Path $backupPath) {{
-        Remove-Item $backupPath -Force
+    if (Test-Path $exePath) {{
+        if (Test-Path $backupPath) {{
+            Remove-Item $backupPath -Force
+        }}
+        Move-Item $exePath -Destination $backupPath -Force
+        Write-Host "[OK] Backup created: PoB-Injector.exe.old"
+    }} else {{
+        Write-Host "[WARNING] Current exe not found, skipping backup"
     }}
-    Copy-Item $exePath -Destination $backupPath -Force
-    Write-Host "[OK] Backup created: PoB-Injector.exe.old"
 }} catch {{
-    Write-Host "[WARNING] Could not create backup: $_"
+    Write-Host "[ERROR] Backup failed: $_"
+    Write-Host ""
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
 }}
 
 # Step 5: Install update
 Write-Host ""
-Write-Host "[Step 5/6] Installing update..."
+Write-Host "[Step 5/7] Installing update..."
 try {{
     $sourceDir = Join-Path $extractPath "PoB-Injector"
     Copy-Item "$sourceDir\\*" "{exe_dir}" -Recurse -Force
@@ -108,7 +116,7 @@ try {{
     Write-Host "[ERROR] Installation failed: $_"
     Write-Host "[INFO] Attempting rollback..."
     if (Test-Path $backupPath) {{
-        Copy-Item $backupPath -Destination $exePath -Force
+        Move-Item $backupPath -Destination $exePath -Force
         Write-Host "[OK] Rollback successful"
     }}
     Write-Host ""
@@ -117,9 +125,40 @@ try {{
     exit 1
 }}
 
-# Step 6: Cleanup and restart
+# Step 6: Verify new exe
 Write-Host ""
-Write-Host "[Step 6/6] Cleaning up and restarting..."
+Write-Host "[Step 6/7] Verifying installation..."
+if (-not (Test-Path $exePath)) {{
+    Write-Host "[ERROR] New exe not found after installation"
+    if (Test-Path $backupPath) {{
+        Write-Host "[INFO] Restoring from backup..."
+        Move-Item $backupPath -Destination $exePath -Force
+    }}
+    Write-Host ""
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
+}}
+
+$newExeSize = (Get-Item $exePath).Length
+if ($newExeSize -lt 1MB) {{
+    Write-Host "[ERROR] New exe too small: $newExeSize bytes (possibly corrupted)"
+    if (Test-Path $backupPath) {{
+        Write-Host "[INFO] Restoring from backup..."
+        Remove-Item $exePath -Force
+        Move-Item $backupPath -Destination $exePath -Force
+    }}
+    Write-Host ""
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
+}}
+
+Write-Host "[OK] New exe verified: $([math]::Round($newExeSize / 1MB, 2)) MB"
+
+# Step 7: Cleanup
+Write-Host ""
+Write-Host "[Step 7/7] Cleaning up..."
 try {{
     Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
     Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -136,9 +175,20 @@ Write-Host "Restarting application in 2 seconds..."
 Start-Sleep -Seconds 2
 
 # Restart application
-Start-Process -FilePath "{exe_path}" -ArgumentList "--updated" -WorkingDirectory "{exe_dir}"
+try {{
+    Start-Process -FilePath "{exe_path}" -ArgumentList "--updated" -WorkingDirectory "{exe_dir}"
+    Write-Host "[OK] Application restarted"
+}} catch {{
+    Write-Host "[ERROR] Failed to restart: $_"
+    Write-Host "[INFO] Please start the application manually"
+    Write-Host ""
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
+}}
 
 # Self-destruct this script
+Start-Sleep -Seconds 1
 Remove-Item "{script_path}" -Force -ErrorAction SilentlyContinue
 """
     

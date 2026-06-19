@@ -94,7 +94,8 @@
     enchantId: '',
     enchantRecent: [],
     maxQuality: false,
-    activeItemTypeLabel: ''
+    activeItemTypeLabel: '',
+    useDevBranch: false
   };
   let cfg = { ...DEFAULT_CFG };
 
