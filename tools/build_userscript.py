@@ -3,8 +3,9 @@ import json
 import base64
 
 def main():
-    here = os.path.abspath(os.path.dirname(__file__))
-    ext_dir = os.path.join(here, "extension")
+    script_dir = os.path.abspath(os.path.dirname(__file__))
+    root_dir = os.path.dirname(script_dir)
+    ext_dir = os.path.join(root_dir, "extension")
     manifest_path = os.path.join(ext_dir, "manifest.json")
     
     with open(manifest_path, "r", encoding="utf-8") as f:
@@ -88,7 +89,7 @@ def main():
 }})();
 """
 
-    out_dir = os.path.join(here, "dist")
+    out_dir = os.path.join(root_dir, "dist")
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
         
