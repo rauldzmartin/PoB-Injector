@@ -152,5 +152,20 @@ def create_tray():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    
+    # Clean up old executable from updates
+    if getattr(sys, 'frozen', False):
+        old_exe = sys.executable + ".old"
+        if os.path.exists(old_exe):
+            try: os.remove(old_exe)
+            except Exception: pass
+    
+    # Route to updater if called by the update endpoint
+    if len(sys.argv) > 1 and "updater.py" in sys.argv[1]:
+        import updater
+        sys.argv.pop(1)
+        updater.main()
+        sys.exit(0)
+        
     start_server()
     create_tray()
