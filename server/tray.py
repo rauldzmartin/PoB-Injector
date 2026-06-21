@@ -243,11 +243,11 @@ if __name__ == "__main__":
     exe_dir = _get_exe_dir()
 
     if getattr(sys, 'frozen', False) and "--updated" not in sys.argv:
-        import updater
+        import updater, subprocess
         if updater.apply_pending_update(exe_dir):
-            # Relaunch with --updated flag
-            os.execv(sys.executable, [sys.executable, "--updated"])
-            # os.execv replaces the process; code below never runs
+            # Relaunch with --updated flag (os.execv fails with PyInstaller --noconsole on Windows)
+            subprocess.Popen([sys.executable, "--updated"])
+            os._exit(0)
 
     # Clean up old exe backup (older than 24h)
     if getattr(sys, 'frozen', False):
