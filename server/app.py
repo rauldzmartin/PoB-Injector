@@ -82,7 +82,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.52-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.54-beta")
 
 app.add_middleware(
     CORSMiddleware,
@@ -159,40 +159,29 @@ def check_update(branch: str = "main"):
 
 @app.post("/update")
 def update(branch: str = "main", version: str = ""):
-    import subprocess
-    updater_path = os.path.join(HERE, "updater.py")
-    
-    # If version not provided, get it from check_update
+    """Download update to pending/ folder. Does NOT restart the app."""
     if not version:
         data = check_update(branch)
         if not data.get("update_available"):
             return {"status": "no_update", "message": "Already on latest version"}
         version = data.get("remote_version", "")
-    
+
     if not version:
         return {"status": "error", "message": "Could not determine version to update to"}
-    
-    # Determine what to pass to updater based on mode
-    # Compiled mode: pass version (downloads release)
-    # Dev mode: pass branch (downloads source)
+
+    # Determine exe_dir for pending/ folder
     if getattr(sys, 'frozen', False):
-        # Compiled exe: use release version
-        arg = version
+        exe_dir = os.path.dirname(sys.executable)
     else:
-        # Dev mode: use branch
-        arg = branch
-    
-    # Spawn updater in a new console so it survives
-    creation_flags = 0x00000010 if os.name == 'nt' else 0 # CREATE_NEW_CONSOLE
-    subprocess.Popen([sys.executable, updater_path, GITHUB_REPO, arg], cwd=HERE, creationflags=creation_flags)
-    
-    # Gracefully kill uvicorn
-    def kill_me():
-        import time
-        time.sleep(1)
-        os._exit(0)
-    threading.Thread(target=kill_me).start()
-    return {"status": "updating", "version": version}
+        exe_dir = os.path.dirname(os.path.abspath(__file__))
+
+    import updater
+    success = updater.download_update(GITHUB_REPO, version, exe_dir)
+
+    if success:
+        return {"status": "downloaded", "version": version, "message": "Restart to apply"}
+    else:
+        return {"status": "error", "message": "Download failed. Check updater.log"}
 
 def _get_active_build() -> str:
     settings_path = os.path.join(POB_INSTALL, "Settings.xml")

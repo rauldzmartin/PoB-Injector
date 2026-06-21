@@ -1,4 +1,4 @@
-import os, sys, time, subprocess, threading, json, webbrowser
+import os, sys, time, threading, json, webbrowser, logging
 import pystray
 from PIL import Image
 
@@ -15,6 +15,20 @@ GITHUB_REPO = "rauldzmartin/PoB-Injector"
 server_process = None
 viewer_process = None
 log_file = None
+
+def _get_exe_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return HERE
+
+# Configure updater logging to file
+_updater_log_path = os.path.join(_get_exe_dir(), "updater.log")
+logging.basicConfig(
+    filename=_updater_log_path,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 def get_current_version():
     """Read current version from manifest.json"""
@@ -114,23 +128,30 @@ def is_channel(channel):
     return inner
 
 def trigger_update(icon, item):
+    """Check for update, download to pending/, and notify user."""
     import urllib.request
-    import json
     try:
-        # Check if update is available first
-        req_check = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={current_channel}")
-        with urllib.request.urlopen(req_check) as response:
+        req = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={current_channel}")
+        with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            
-        if data.get("update_available"):
-            latest = data.get("remote_version", "")
-            icon.notify(f"Downloading version {latest}...", "PoB Injector")
-            req = urllib.request.Request(f"http://127.0.0.1:5000/update?branch={current_channel}&version={latest}", method="POST")
-            urllib.request.urlopen(req)
-        else:
+
+        if not data.get("update_available"):
             icon.notify("You already have the latest version installed.", "PoB Injector")
+            return
+
+        latest = data.get("remote_version", "")
+        icon.notify(f"Downloading v{latest}...", "PoB Injector")
+
+        import updater
+        exe_dir = _get_exe_dir()
+        success = updater.download_update(GITHUB_REPO, latest, exe_dir)
+
+        if success:
+            icon.notify(f"v{latest} ready! Restart to install.", "PoB Injector")
+        else:
+            icon.notify("Download failed. Check updater.log.", "PoB Injector")
     except Exception as e:
-        icon.notify(f"Error checking for updates: {e}", "PoB Injector")
+        icon.notify(f"Update error: {e}", "PoB Injector")
 
 def quit_app(icon, item):
     cleanup_and_exit(icon)
@@ -144,118 +165,100 @@ def view_release_notes(icon, item):
     except Exception as e:
         icon.notify(f"Could not open browser: {e}", "Error")
 
+def restart_and_update(icon, item):
+    """Exit app so next launch applies the pending update."""
+    import updater
+    if updater.has_pending_update(_get_exe_dir()):
+        icon.notify("Restarting to apply update...", "PoB Injector")
+        time.sleep(1)
+        cleanup_and_exit(icon)
+    else:
+        icon.notify("No pending update.", "PoB Injector")
+
+def _has_pending(item):
+    """Dynamic visibility: only show 'Restart & Update' when update is pending."""
+    import updater
+    return updater.has_pending_update(_get_exe_dir()) is not None
+
+def _background_update_checker(icon):
+    """Check for updates every 4 hours. Download silently if available."""
+    import updater
+    while True:
+        time.sleep(4 * 3600)  # 4 hours
+        try:
+            import urllib.request
+            req = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={current_channel}")
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode())
+            if data.get("update_available"):
+                latest = data.get("remote_version", "")
+                exe_dir = _get_exe_dir()
+                if not updater.has_pending_update(exe_dir):
+                    success = updater.download_update(GITHUB_REPO, latest, exe_dir)
+                    if success:
+                        icon.notify(f"v{latest} ready! Restart to install.", "PoB Injector")
+        except Exception:
+            pass  # Silent fail for background checks
+
 def create_tray():
     image = Image.open(ICON_PATH)
-    
+
     channel_menu = pystray.Menu(
         pystray.MenuItem("Stable", set_channel("main"), checked=is_channel("main"), radio=True),
         pystray.MenuItem("Beta", set_channel("dev"), checked=is_channel("dev"), radio=True)
     )
-    
+
     menu = pystray.Menu(
         pystray.MenuItem("Toggle console", toggle_console, default=True),
-        pystray.MenuItem("Update", trigger_update),
+        pystray.MenuItem("Check for Updates", trigger_update),
+        pystray.MenuItem("Restart && Update", restart_and_update, visible=_has_pending),
         pystray.MenuItem("Update channel", channel_menu),
         pystray.MenuItem("View Release Notes", view_release_notes),
         pystray.MenuItem("Quit", quit_app)
     )
-    
+
     icon = pystray.Icon("PoB Injector", image, "PoB Injector Server", menu)
-    
-    # Check for update notification
+
+    # Post-update notification
     if "--updated" in sys.argv:
         def show_update_notif():
-            import time
             time.sleep(2)
             version = get_current_version()
             icon.notify(f"Updated successfully to v{version}!", "Update Complete")
         threading.Thread(target=show_update_notif, daemon=True).start()
     elif "--update-failed" in sys.argv:
         def show_fail_notif():
-            import time
             time.sleep(2)
-            icon.notify("Update failed. Running previous version. Check updater.log for details.", "Update Failed")
+            icon.notify("Update failed. Running previous version. Check updater.log.", "Update Failed")
         threading.Thread(target=show_fail_notif, daemon=True).start()
-        
+
     threading.Thread(target=monitor_server, args=(icon,), daemon=True).start()
+    threading.Thread(target=_background_update_checker, args=(icon,), daemon=True).start()
     icon.run()
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    
-    # Clean up old executable from updates (keep for 24h as backup)
+
+    # --- Phase 1: Apply pending update (before anything else) ---
+    exe_dir = _get_exe_dir()
+
+    if getattr(sys, 'frozen', False) and "--updated" not in sys.argv:
+        import updater
+        if updater.apply_pending_update(exe_dir):
+            # Relaunch with --updated flag
+            os.execv(sys.executable, [sys.executable, "--updated"])
+            # os.execv replaces the process; code below never runs
+
+    # Clean up old exe backup (older than 24h)
     if getattr(sys, 'frozen', False):
         old_exe = sys.executable + ".old"
         if os.path.exists(old_exe):
             try:
                 age = time.time() - os.path.getmtime(old_exe)
-                if age > 24 * 3600:  # Older than 24 hours
+                if age > 24 * 3600:
                     os.remove(old_exe)
-            except Exception: pass
-    
-    # Route to updater if called by the update endpoint
-    if len(sys.argv) > 1 and "updater.py" in sys.argv[1]:
-        import updater
-        sys.argv.pop(1)
-        updater.main()
-        sys.exit(0)
-    
-    # CLI flag: --update (for testing/automation)
-    if "--update" in sys.argv:
-        print("CLI Update Mode: Starting server and triggering update...")
-        start_server()
-        
-        # Wait for server to be ready
-        import urllib.request
-        for i in range(30):
-            try:
-                urllib.request.urlopen("http://127.0.0.1:5000/status", timeout=1)
-                print("[OK] Server ready")
-                break
-            except:
-                time.sleep(0.5)
-        else:
-            print("[ERROR] Server didn't start in time")
-            sys.exit(1)
-        
-        # Get update channel from --channel flag or default to dev
-        channel = "dev"
-        if "--channel" in sys.argv:
-            idx = sys.argv.index("--channel")
-            if idx + 1 < len(sys.argv):
-                channel = sys.argv[idx + 1]
-        
-        print(f"[INFO] Checking for updates on channel: {channel}")
-        
-        # Check for updates
-        try:
-            req_check = urllib.request.Request(f"http://127.0.0.1:5000/check-update?branch={channel}")
-            with urllib.request.urlopen(req_check) as response:
-                data = json.loads(response.read().decode())
-            
-            if data.get("update_available"):
-                version = data.get("remote_version", "")
-                print(f"[INFO] Update available: {version}")
-                print(f"[INFO] Triggering update...")
-                
-                # Trigger update
-                req_update = urllib.request.Request(
-                    f"http://127.0.0.1:5000/update?branch={channel}&version={version}",
-                    method="POST"
-                )
-                urllib.request.urlopen(req_update)
-                print("[OK] Update triggered, server will shut down and updater will start")
-                print("[INFO] Check updater.log for details")
-            else:
-                print(f"[INFO] Already on latest version: {data.get('local_version', 'unknown')}")
-                sys.exit(0)
-        except Exception as e:
-            print(f"[ERROR] Update failed: {e}")
-            sys.exit(1)
-        
-        # Keep process alive until updater takes over
-        time.sleep(5)
-        sys.exit(0)
-        
+            except Exception:
+                pass
+
     start_server()
     create_tray()

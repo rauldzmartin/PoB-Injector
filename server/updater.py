@@ -1,189 +1,150 @@
 """
-PoB Injector Updater - Simple BAT-based updater
-Generates a BAT file that handles the complete update process
+PoB Injector Updater - Background download + apply-on-restart
+Two public functions:
+  - download_update(repo, version, dest_dir) -> bool
+  - apply_pending_update(exe_dir) -> bool
 """
-import sys, os, time, subprocess
+import os, sys, shutil, zipfile, logging
 
-def generate_bat_updater(repo, version, exe_dir, exe_path):
-    """
-    Generate BAT script that downloads, extracts, and installs update
-    Returns path to generated BAT file
-    """
-    bat_path = os.path.join(exe_dir, "update.bat")
-    log_path = os.path.join(exe_dir, "update.log")
-    
-    # GitHub release URL
-    zip_url = f"https://github.com/{repo}/releases/download/v{version}/PoB_Injector_Release_v{version}.zip"
-    
-    # BAT script content
-    bat_script = f"""@echo off
-REM PoB Injector Auto-Updater v{version}
-REM Log: {log_path}
+log = logging.getLogger("updater")
 
-echo ============================================================ > "{log_path}"
-echo PoB Injector Auto-Updater >> "{log_path}"
-echo Version: {version} >> "{log_path}"
-echo ============================================================ >> "{log_path}"
-echo. >> "{log_path}"
+PENDING_DIR_NAME = "pending"
+PENDING_ZIP_NAME = "update.zip"
+PENDING_VERSION_FILE = "version.txt"
 
-REM Step 1: Close running exe
-echo [Step 1/5] Closing running application... >> "{log_path}"
-taskkill /F /IM "PoB-Injector.exe" >nul 2>&1
-timeout /t 3 /nobreak >nul
-echo [OK] Process closed >> "{log_path}"
-echo. >> "{log_path}"
 
-REM Step 2: Download release ZIP
-echo [Step 2/5] Downloading update... >> "{log_path}"
-set "TEMP_ZIP=%TEMP%\\pob_update_{version}.zip"
-set "UPDATE_DIR={exe_dir}\\update"
+def _get_pending_dir(exe_dir: str) -> str:
+    return os.path.join(exe_dir, PENDING_DIR_NAME)
 
-powershell -Command "Invoke-WebRequest -Uri '{zip_url}' -OutFile '%TEMP_ZIP%' -UserAgent 'PoB-Injector-Updater'" >> "{log_path}" 2>&1
-if errorlevel 1 (
-    echo [ERROR] Download failed >> "{log_path}"
-    echo Update failed. Check update.log for details.
-    timeout /t 5 /nobreak >nul
-    exit /b 1
-)
-echo [OK] Download completed >> "{log_path}"
-echo. >> "{log_path}"
 
-REM Step 3: Extract ZIP to /update folder
-echo [Step 3/5] Extracting update... >> "{log_path}"
-if exist "%UPDATE_DIR%" rmdir /s /q "%UPDATE_DIR%" >nul 2>&1
-powershell -Command "Expand-Archive -Path '%TEMP_ZIP%' -DestinationPath '%UPDATE_DIR%' -Force" >> "{log_path}" 2>&1
-if errorlevel 1 (
-    echo [ERROR] Extraction failed >> "{log_path}"
-    echo Update failed. Check update.log for details.
-    timeout /t 5 /nobreak >nul
-    exit /b 1
-)
-echo [OK] Extracted to update folder >> "{log_path}"
-echo. >> "{log_path}"
+def _get_zip_url(repo: str, version: str) -> str:
+    return f"https://github.com/{repo}/releases/download/v{version}/PoB_Injector_Release_v{version}.zip"
 
-REM Step 4: Replace exe and extension
-echo [Step 4/5] Installing new version... >> "{log_path}"
-if exist "{exe_path}.old" del /f /q "{exe_path}.old" >nul 2>&1
-if exist "{exe_path}" move /y "{exe_path}" "{exe_path}.old" >> "{log_path}" 2>&1
-copy /y "%UPDATE_DIR%\\PoB-Injector\\PoB-Injector.exe" "{exe_path}" >> "{log_path}" 2>&1
-if errorlevel 1 (
-    echo [ERROR] Exe installation failed >> "{log_path}"
-    if exist "{exe_path}.old" (
-        echo [INFO] Restoring backup... >> "{log_path}"
-        move /y "{exe_path}.old" "{exe_path}" >nul 2>&1
-    )
-    echo Update failed. Check update.log for details.
-    timeout /t 5 /nobreak >nul
-    exit /b 1
-)
-echo [OK] Exe installed >> "{log_path}"
 
-REM Copy extension folder
-if exist "{exe_dir}\\extension" rmdir /s /q "{exe_dir}\\extension" >nul 2>&1
-xcopy /E /I /Y "%UPDATE_DIR%\\PoB-Injector\\extension" "{exe_dir}\\extension" >> "{log_path}" 2>&1
-if errorlevel 1 (
-    echo [WARNING] Extension copy failed >> "{log_path}"
-) else (
-    echo [OK] Extension installed >> "{log_path}"
-)
-echo. >> "{log_path}"
+def download_update(repo: str, version: str, exe_dir: str) -> bool:
+    """Download a release ZIP into exe_dir/pending/. Returns True on success."""
+    import requests
 
-REM Step 5: Start new exe
-echo [Step 5/5] Starting application... >> "{log_path}"
-start "" "{exe_path}" --updated
-timeout /t 3 /nobreak >nul
+    pending = _get_pending_dir(exe_dir)
+    os.makedirs(pending, exist_ok=True)
+    zip_path = os.path.join(pending, PENDING_ZIP_NAME)
+    version_path = os.path.join(pending, PENDING_VERSION_FILE)
 
-REM Verify process started
-tasklist | find /i "PoB-Injector.exe" >nul
-if errorlevel 1 (
-    echo [WARNING] Process not detected >> "{log_path}"
-    echo Application may need to be started manually >> "{log_path}"
-) else (
-    echo [OK] Application started successfully >> "{log_path}"
-)
+    url = _get_zip_url(repo, version)
+    log.info("Downloading %s", url)
 
-echo. >> "{log_path}"
-echo ============================================================ >> "{log_path}"
-echo Update completed! >> "{log_path}"
-echo ============================================================ >> "{log_path}"
-
-REM Cleanup
-del /f /q "%TEMP_ZIP%" >nul 2>&1
-rmdir /s /q "%UPDATE_DIR%" >nul 2>&1
-del /f /q "{bat_path}" >nul 2>&1
-
-exit
-"""
-    
-    # Write BAT file
-    with open(bat_path, 'w', encoding='utf-8') as f:
-        f.write(bat_script)
-    
-    return bat_path
-
-def main():
-    print("============================================================")
-    print("PoB Injector Updater (BAT-based)")
-    print("============================================================")
-    
-    # Check if running in frozen/compiled mode
-    is_compiled = getattr(sys, 'frozen', False)
-    
-    if is_compiled:
-        exe_path = sys.executable
-        exe_dir = os.path.dirname(exe_path)
-    else:
-        # Dev mode - not supported with BAT updater
-        print("[ERROR] BAT updater only works in compiled mode")
-        print("[INFO] In dev mode, use git pull instead")
-        return
-    
-    print(f"Mode: Compiled")
-    print(f"Exe: {exe_path}")
-    print(f"Dir: {exe_dir}")
-    print("")
-    
-    # Parse arguments
-    if len(sys.argv) < 3:
-        print("[ERROR] Usage: updater.py <repo> <version>")
-        print("Example: updater.py rauldzmartin/PoB-Injector 0.6.52-beta")
-        return
-    
-    repo = sys.argv[1]
-    version = sys.argv[2]
-    
-    print(f"Repository: {repo}")
-    print(f"Version: {version}")
-    print("")
-    
-    # Wait for server to shut down
-    print("Waiting for server to shut down...")
-    time.sleep(2)
-    
-    # Generate BAT updater
-    print("Generating BAT updater...")
-    bat_path = generate_bat_updater(repo, version, exe_dir, exe_path)
-    print(f"[OK] Updater generated: {bat_path}")
-    print("")
-    
-    # Execute BAT file
-    print("Launching updater...")
-    print("============================================================")
-    print("")
-    
     try:
-        # Execute BAT file in a new window
-        subprocess.Popen([bat_path], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
-        
-        print("[OK] Updater launched")
-        print("[INFO] Check update.log for progress")
-        
-    except Exception as e:
-        print(f"[ERROR] Failed to launch updater: {e}")
-        try:
-            os.remove(bat_path)
-        except:
-            pass
+        resp = requests.get(url, timeout=120, stream=True)
+        resp.raise_for_status()
 
-if __name__ == "__main__":
-    main()
+        with open(zip_path, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=65536):
+                f.write(chunk)
+
+        # Validate ZIP integrity
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            bad = zf.testzip()
+            if bad:
+                log.error("Corrupt file in ZIP: %s", bad)
+                shutil.rmtree(pending, ignore_errors=True)
+                return False
+
+        # Write version marker
+        with open(version_path, "w", encoding="utf-8") as f:
+            f.write(version)
+
+        log.info("Download complete: %s", zip_path)
+        return True
+
+    except Exception as e:
+        log.error("Download failed: %s", e)
+        shutil.rmtree(pending, ignore_errors=True)
+        return False
+
+
+def has_pending_update(exe_dir: str) -> str | None:
+    """Return pending version string, or None if no update is staged."""
+    pending = _get_pending_dir(exe_dir)
+    version_path = os.path.join(pending, PENDING_VERSION_FILE)
+    zip_path = os.path.join(pending, PENDING_ZIP_NAME)
+    if os.path.isfile(version_path) and os.path.isfile(zip_path):
+        try:
+            with open(version_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+
+def apply_pending_update(exe_dir: str) -> bool:
+    """
+    Apply a previously downloaded update. Call BEFORE starting the server.
+    Returns True if update was applied (caller should relaunch with --updated).
+    Returns False if no pending update or if it failed.
+    """
+    pending = _get_pending_dir(exe_dir)
+    zip_path = os.path.join(pending, PENDING_ZIP_NAME)
+    version_path = os.path.join(pending, PENDING_VERSION_FILE)
+
+    if not os.path.isfile(zip_path):
+        return False
+
+    version = "unknown"
+    if os.path.isfile(version_path):
+        with open(version_path, "r", encoding="utf-8") as f:
+            version = f.read().strip()
+
+    log.info("Applying pending update v%s", version)
+    extract_dir = os.path.join(pending, "extracted")
+
+    try:
+        # Extract
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_dir)
+
+        # Locate extracted content (ZIP contains PoB-Injector/ subfolder)
+        inner = os.path.join(extract_dir, "PoB-Injector")
+        if not os.path.isdir(inner):
+            # Fallback: maybe extracted flat
+            inner = extract_dir
+
+        # --- Swap exe ---
+        exe_path = os.path.join(exe_dir, "PoB-Injector.exe")
+        new_exe = os.path.join(inner, "PoB-Injector.exe")
+        old_exe = exe_path + ".old"
+
+        if os.path.isfile(new_exe):
+            if os.path.isfile(old_exe):
+                os.remove(old_exe)
+            if os.path.isfile(exe_path):
+                os.rename(exe_path, old_exe)
+            shutil.copy2(new_exe, exe_path)
+            log.info("Exe swapped successfully")
+
+        # --- Swap extension folder ---
+        new_ext = os.path.join(inner, "extension")
+        old_ext = os.path.join(exe_dir, "extension")
+        if os.path.isdir(new_ext):
+            if os.path.isdir(old_ext):
+                shutil.rmtree(old_ext)
+            shutil.copytree(new_ext, old_ext)
+            log.info("Extension folder updated")
+
+        # Cleanup pending
+        shutil.rmtree(pending, ignore_errors=True)
+        log.info("Update v%s applied successfully", version)
+        return True
+
+    except Exception as e:
+        log.error("Failed to apply update: %s", e)
+        # Attempt rollback of exe
+        exe_path = os.path.join(exe_dir, "PoB-Injector.exe")
+        old_exe = exe_path + ".old"
+        if os.path.isfile(old_exe) and not os.path.isfile(exe_path):
+            try:
+                os.rename(old_exe, exe_path)
+                log.info("Rolled back exe")
+            except Exception:
+                pass
+        # Leave pending dir for debugging (don't delete on failure)
+        return False
