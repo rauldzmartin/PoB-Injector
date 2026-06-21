@@ -1,4 +1,4 @@
-import os, sys, time, threading, json, webbrowser, logging
+import os, sys, time, subprocess, threading, json, webbrowser, logging
 import pystray
 from PIL import Image
 
@@ -166,11 +166,16 @@ def view_release_notes(icon, item):
         icon.notify(f"Could not open browser: {e}", "Error")
 
 def restart_and_update(icon, item):
-    """Exit app so next launch applies the pending update."""
+    """Spawn a new instance (which will apply the pending update on startup), then exit."""
     import updater
     if updater.has_pending_update(_get_exe_dir()):
         icon.notify("Restarting to apply update...", "PoB Injector")
         time.sleep(1)
+        # Fully detached child survives parent exit in PyInstaller --noconsole
+        subprocess.Popen(
+            [sys.executable],
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
         cleanup_and_exit(icon)
     else:
         icon.notify("No pending update.", "PoB Injector")
@@ -243,10 +248,13 @@ if __name__ == "__main__":
     exe_dir = _get_exe_dir()
 
     if getattr(sys, 'frozen', False) and "--updated" not in sys.argv:
-        import updater, subprocess
+        import updater
         if updater.apply_pending_update(exe_dir):
-            # Relaunch with --updated flag (os.execv fails with PyInstaller --noconsole on Windows)
-            subprocess.Popen([sys.executable, "--updated"])
+            # Fully detached child survives parent exit in PyInstaller --noconsole
+            subprocess.Popen(
+                [sys.executable, "--updated"],
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
             os._exit(0)
 
     # Clean up old exe backup (older than 24h)
