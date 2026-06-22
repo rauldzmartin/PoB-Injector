@@ -173,6 +173,11 @@ class PathOfBuilding:
         print("DEBUG: cli.lua path =", os.path.join(data_dir, 'cli.lua'))
         print("DEBUG: cwd =", pob_path)
 
+        # Ensure PoB's DLLs (lcurl deps etc.) are findable by luajit
+        pob_in_path = os.environ.get('PATH', '')
+        if pob_install not in pob_in_path:
+            os.environ['PATH'] = pob_install + ';' + pob_in_path
+
         self.pob = ProcessWrapper(debug=self.verbose)  #  Initialize first
 
         firstline = self.pob.start([f'{data_dir}\\luajit.exe', f'{data_dir}\\cli.lua'], cwd=pob_path)
