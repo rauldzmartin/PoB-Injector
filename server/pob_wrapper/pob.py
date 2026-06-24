@@ -207,7 +207,7 @@ class PathOfBuilding:
 
     def load_build(self, path: str):
         path = safe_string(path)
-        self._send(f'loadBuild("{path}")', ignore_result=True)
+        return self._send(f'loadBuild("{path}")')
 
     def update_build(self):
         self._send(f'updateBuild()', ignore_result=True)
@@ -286,6 +286,9 @@ class PathOfBuilding:
         return result.get('result', None)
 
     direct_send = _send
+
+    def is_alive(self):
+        return self.pob is not None and self.pob.process.poll() is None
 
     def kill(self):
         if self.pob:

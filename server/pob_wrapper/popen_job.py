@@ -51,8 +51,9 @@ class JobPopen(Popen):
         # Temporarily patch the subprocess creation logic to assign created
         # processes to the new job, then resume execution normally.
         CREATE_SUSPENDED = 0x00000004
+        CREATE_NO_WINDOW = 0x08000000
         kwargs.setdefault("creationflags", 0)
-        kwargs["creationflags"] |= CREATE_SUSPENDED
+        kwargs["creationflags"] |= (CREATE_SUSPENDED | CREATE_NO_WINDOW)
         try:
             _winapi = subprocess._winapi  # Python 3
             _winapi_key = "_winapi"

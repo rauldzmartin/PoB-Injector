@@ -3,7 +3,7 @@ import os
 from subprocess import PIPE, STDOUT
 from typing import List
 
-from .popen_job import Popen
+from .popen_job import JobPopen as Popen
 
 __all__ = [
     'ProcessWrapper',

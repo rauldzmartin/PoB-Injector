@@ -207,6 +207,7 @@ function newBuild()
 end
 
 function loadBuildFromPath(path)
+    if not path or path == "" then error("loadBuildFromPath: empty path") end
     local _, fileName = string.match(path, "(.-)([^\\/]-%.?[^%.\\/]*)$")
     local buildName = (fileName or ""):gsub("%.xml$","")
     mainObject.main:SetMode("BUILD", path, buildName)
@@ -232,7 +233,7 @@ end
 function saveBuildToXml()
     local xmlText = build:SaveDB("dummy")
     if not xmlText then
-        print("Failed to prepare save XML"); os.exit(1)
+        error("saveBuildToXml: failed to prepare save XML")
     end
     return xmlText
 end
@@ -244,13 +245,13 @@ end
 
 function loadText(fileName)
     local f = io.open(fileName, "r")
-    if not f then print("Failed to load file: "..tostring(fileName)); os.exit(1) end
+    if not f then error("loadText: file not found: " .. tostring(fileName)) end
     local txt = f:read("*a"); f:close(); return txt
 end
 
 function loadTextLines(fileName)
     local f = io.open(fileName, "r")
-    if not f then print("Failed to load file: "..tostring(fileName)); os.exit(1) end
+    if not f then error("loadTextLines: file not found: " .. tostring(fileName)) end
     local out = {}; for line in f:lines() do out[#out+1]=line end
     f:close(); return out
 end

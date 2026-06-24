@@ -101,7 +101,17 @@
 
   function loadCfg() {
     return new Promise(resolve => {
-      if (!chrome?.storage?.local) return resolve(cfg);
+      if (!chrome?.storage?.local) {
+        try {
+          const val = localStorage.getItem(CFG_KEY);
+          if (val) {
+            Object.assign(cfg, JSON.parse(val));
+          }
+        } catch (e) {
+          console.error("Failed to load config from localStorage:", e);
+        }
+        return resolve(cfg);
+      }
       chrome.storage.local.get([CFG_KEY], out => {
         if (out && out[CFG_KEY]) Object.assign(cfg, out[CFG_KEY]);
         resolve(cfg);
@@ -109,6 +119,14 @@
     });
   }
   function saveCfg() {
+    if (!chrome?.storage?.local) {
+      try {
+        localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+      } catch (e) {
+        console.error("Failed to save config to localStorage:", e);
+      }
+      return;
+    }
     chrome?.storage?.local?.set({ [CFG_KEY]: cfg });
   }
 

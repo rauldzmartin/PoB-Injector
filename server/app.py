@@ -10,11 +10,56 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 
+# Determine paths based on execution mode (frozen exe vs dev)
+if getattr(sys, 'frozen', False):
+    # PyInstaller frozen exe: use _MEIPASS for bundled files
+    HERE = sys._MEIPASS
+    REPO_ROOT = HERE
+else:
+    # Development mode: use normal relative paths
+    HERE = os.path.abspath(os.path.dirname(__file__))
+    REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
+
+import json
+
+def _get_config_path() -> str:
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+    else:
+        exe_dir = HERE
+    return os.path.join(exe_dir, "config.json")
+
+def load_config() -> dict:
+    path = _get_config_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_config(config_data: dict):
+    path = _get_config_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, indent=4)
+    except Exception:
+        pass
+
 POB_INSTALL_ENV = os.getenv("POB_INSTALL")
 
 def _find_pob_install() -> str:
+    # 0. Check config.json first
+    cfg = load_config()
+    cached = cfg.get("pob_install")
+    if cached and os.path.exists(os.path.join(cached, "Launch.lua")):
+        return cached
+
     # 1. Check from .env
     if POB_INSTALL_ENV and os.path.exists(os.path.join(POB_INSTALL_ENV, "Launch.lua")):
+        cfg["pob_install"] = POB_INSTALL_ENV
+        save_config(cfg)
         return POB_INSTALL_ENV
 
     # 2. Check if PoB is running
@@ -26,6 +71,8 @@ def _find_pob_install() -> str:
                 if p.ExecutablePath:
                     pob_dir = os.path.dirname(p.ExecutablePath)
                     if os.path.exists(os.path.join(pob_dir, "Launch.lua")):
+                        cfg["pob_install"] = pob_dir
+                        save_config(cfg)
                         return pob_dir
     except Exception as e:
         print(f"Error checking WMI for running PoB: {e}")
@@ -45,29 +92,93 @@ def _find_pob_install() -> str:
     ]
     for p in common:
         if os.path.exists(os.path.join(p, "Launch.lua")):
+            cfg["pob_install"] = p
+            save_config(cfg)
             return p
 
     # Fallback
-    return POB_INSTALL_ENV if POB_INSTALL_ENV else ""
+    ret = POB_INSTALL_ENV if POB_INSTALL_ENV else ""
+    if ret:
+        cfg["pob_install"] = ret
+        save_config(cfg)
+    return ret
+
+def _find_pob_path(install_dir: str) -> str:
+    # 0. Check config.json first
+    cfg = load_config()
+    cached = cfg.get("pob_path")
+    if cached and os.path.exists(cached):
+        return cached
+
+    # 1. Check from .env
+    env_path = os.getenv("POB_PATH")
+    if env_path and os.path.exists(env_path):
+        cfg["pob_path"] = env_path
+        save_config(cfg)
+        return env_path
+    
+    # 2. Check roaming appdata based on install dir name
+    appdata = os.path.expandvars(r"%APPDATA%")
+    if "PoE2" in install_dir:
+        candidate = os.path.join(appdata, "Path of Building Community (PoE2)")
+    else:
+        candidate = os.path.join(appdata, "Path of Building Community")
+        
+    if os.path.exists(candidate):
+        cfg["pob_path"] = candidate
+        save_config(cfg)
+        return candidate
+        
+    cfg["pob_path"] = install_dir
+    save_config(cfg)
+    return install_dir
+
+def _find_user_pob_dir(install_dir: str) -> str:
+    # 0. Check config.json first
+    cfg = load_config()
+    cached = cfg.get("pob_user_dir")
+    if cached and os.path.exists(cached):
+        return cached
+
+    # 1. Get Documents directory
+    from win32com.shell import shell, shellcon
+    try:
+        docs = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+    except Exception:
+        docs = os.path.expandvars(r"%USERPROFILE%\Documents")
+    
+    # 2. Determine folder name based on "PoE2" in install_dir
+    if "PoE2" in install_dir:
+        folder_name = "Path of Building (PoE2)"
+    else:
+        folder_name = "Path of Building"
+        
+    candidate = os.path.join(docs, folder_name)
+    if os.path.exists(candidate):
+        cfg["pob_user_dir"] = candidate
+        save_config(cfg)
+        return candidate
+        
+    # Fallback to checking normal "Path of Building"
+    candidate_poe1 = os.path.join(docs, "Path of Building")
+    if os.path.exists(candidate_poe1):
+        cfg["pob_user_dir"] = candidate_poe1
+        save_config(cfg)
+        return candidate_poe1
+        
+    cfg["pob_user_dir"] = install_dir
+    save_config(cfg)
+    return install_dir
 
 POB_INSTALL = _find_pob_install()
-POB_PATH    = os.getenv("POB_PATH", POB_INSTALL)
+POB_PATH    = _find_pob_path(POB_INSTALL)
+POB_USER_DIR = _find_user_pob_dir(POB_INSTALL)
 MOD_RUNES_PATH = os.getenv("MOD_RUNES_PATH", os.path.join(POB_INSTALL, r"Data\ModRunes.lua"))
 MOD_ENCHANTS_PATH = os.getenv("MOD_ENCHANTS_PATH", os.path.join(POB_INSTALL, r"Data\QueryMods.lua"))
 
 USER_POB_WRAPPER = os.getenv("USER_POB_WRAPPER")
 if USER_POB_WRAPPER and USER_POB_WRAPPER not in sys.path:
     sys.path.insert(0, USER_POB_WRAPPER)
-
-# Determine paths based on execution mode (frozen exe vs dev)
-if getattr(sys, 'frozen', False):
-    # PyInstaller frozen exe: use _MEIPASS for bundled files
-    HERE = sys._MEIPASS
-    REPO_ROOT = HERE
-else:
-    # Development mode: use normal relative paths
-    HERE = os.path.abspath(os.path.dirname(__file__))
-    REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 
 PY_SRC = os.path.join(HERE, "pob_wrapper")
 
@@ -82,7 +193,7 @@ except Exception as e:
     ExternalError = Exception  # type: ignore
     _import_error = e
 
-app = FastAPI(title="PoB HTTP API", version="0.6.60-beta")
+app = FastAPI(title="PoB HTTP API", version="0.6.61-beta")
 
 app.add_middleware(
     CORSMiddleware,
@@ -106,9 +217,19 @@ def _ensure_pob():
     global _pob
     if _import_error:
         raise HTTPException(status_code=500, detail=f"Failed to import pob_wrapper: {_import_error}")
+    if _pob is not None and not _pob.is_alive():
+        _pob.kill()
+        _pob = None
     if _pob is None:
         _pob = PathOfBuilding(pob_path=POB_PATH, pob_install=POB_INSTALL, verbose=True)  # type: ignore
     return _pob
+
+@app.on_event("shutdown")
+def shutdown_event():
+    global _pob
+    if _pob is not None:
+        _pob.kill()
+        _pob = None
 
 def _try_b64(s: str) -> str:
     try:
@@ -184,7 +305,7 @@ def update(branch: str = "main", version: str = ""):
         return {"status": "error", "message": "Download failed. Check updater.log"}
 
 def _get_active_build() -> str:
-    settings_path = os.path.join(POB_INSTALL, "Settings.xml")
+    settings_path = os.path.join(POB_USER_DIR, "Settings.xml")
     if os.path.exists(settings_path):
         try:
             import xml.etree.ElementTree as ET
@@ -196,7 +317,7 @@ def _get_active_build() -> str:
                     if 'string' in arg.attrib:
                         build_path = arg.attrib['string']
                         if not os.path.isabs(build_path):
-                            build_path = os.path.join(POB_INSTALL, "Builds", build_path)
+                            build_path = os.path.join(POB_USER_DIR, "Builds", build_path)
                             if not build_path.endswith(".xml"):
                                 build_path += ".xml"
                         if os.path.exists(build_path):
@@ -204,7 +325,7 @@ def _get_active_build() -> str:
         except Exception as e:
             print(f"Error parsing Settings.xml: {e}")
             
-    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    builds_dir = os.path.join(POB_USER_DIR, "Builds")
     if os.path.exists(builds_dir):
         for root_dir, dirs, files in os.walk(builds_dir):
             for file in files:
@@ -235,7 +356,7 @@ def load_pob(req: LoadReq):
         else:
             build = _try_b64(build)
             if not os.path.isabs(build):
-                build = os.path.join(POB_INSTALL, "Builds", build)
+                build = os.path.join(POB_USER_DIR, "Builds", build)
                 if not build.endswith(".xml"):
                     build += ".xml"
         try:
@@ -243,13 +364,16 @@ def load_pob(req: LoadReq):
             _loaded_build_path = build
             if os.path.exists(build):
                 _loaded_build_mtime = os.path.getmtime(build)
+        except (OSError, EOFError, BrokenPipeError):
+            _pob = None
+            raise HTTPException(status_code=503, detail="PoB subprocess crashed, restarting...")
         except ExternalError as e:  # type: ignore
             raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
     return {"status": "ok"}
 
 @app.get("/builds")
 def list_builds():
-    builds_dir = os.path.join(POB_INSTALL, "Builds")
+    builds_dir = os.path.join(POB_USER_DIR, "Builds")
     if not os.path.exists(builds_dir):
         return []
     
@@ -284,6 +408,9 @@ def item_impact(req: ImpactReq):
             if html:
                 html = re.sub(r'(?:<br>)?\s*(?:\^x[0-9A-Fa-f]{6})?Tip: Press Ctrl\+D to disable the display of stat differences\.?', '', html, flags=re.IGNORECASE)
                 html = re.sub(r'(?:<br>)+$', '', html.strip())
+        except (OSError, EOFError, BrokenPipeError):
+            _pob = None
+            raise HTTPException(status_code=503, detail="PoB subprocess crashed, restarting...")
         except ExternalError as e:  # type: ignore
             raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
     if not html:
@@ -300,6 +427,9 @@ def import_item(req: ImpactReq):
             result = pob.import_item(req.item, req.maxQuality)
             if result != "Success":
                 raise HTTPException(status_code=500, detail=str(result))
+        except (OSError, EOFError, BrokenPipeError):
+            _pob = None
+            raise HTTPException(status_code=503, detail="PoB subprocess crashed, restarting...")
         except ExternalError as e:  # type: ignore
             raise HTTPException(status_code=500, detail=f"PoB error: {getattr(e,'status',e)}")
     return {"status": "ok"}

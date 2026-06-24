@@ -114,12 +114,36 @@ def toggle_console(icon, item):
         viewer_process = multiprocessing.Process(target=run_viewer, args=(log_path,))
         viewer_process.start()
 
-current_channel = "dev"
+def _get_config_path():
+    return os.path.join(_get_exe_dir(), "config.json")
+
+def load_config():
+    config_path = _get_config_path()
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_config(config_data):
+    config_path = _get_config_path()
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, indent=4)
+    except Exception:
+        pass
+
+current_channel = load_config().get("update_channel", "dev")
 
 def set_channel(channel):
     def inner(icon, item):
         global current_channel
         current_channel = channel
+        cfg = load_config()
+        cfg["update_channel"] = channel
+        save_config(cfg)
     return inner
 
 def is_channel(channel):

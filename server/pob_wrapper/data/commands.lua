@@ -50,7 +50,11 @@ function commands.getBuildInfo(out)
 end
 
 function commands.loadBuild(path)
-    pobinterface.loadBuild(path)
+    if not path or path == "" then
+        newBuild()
+    else
+        pobinterface.loadBuild(path)
+    end
     result = getBuildInfo()
     return result
 end
